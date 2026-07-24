@@ -1,7 +1,10 @@
-const TOPICS = ['河冰与冰塞', '降雪与积雪', '冰川与融水', '海冰', '冻土与冻融', '冰冻圈水文', '遥感与模型', '冰雪灾害'];
-const SEARCH_TERMS = ['river ice', 'ice jam', 'snow', 'glacier', 'sea ice', 'permafrost', 'freeze thaw', 'cold regions hydrology'];
+Exit code: 0
+Wall time: 0.6 seconds
+Output:
+const TOPICS = ['娌冲啺', '鍐板', '闄嶉洩涓庣Н闆?, '鍐板窛涓庤瀺姘?, '娴峰啺', '鍐诲湡涓庡喕铻?, '鍐板喕鍦堟按鏂?, '閬ユ劅涓庢ā鍨?, '鍐伴洩鐏惧', '绁佽繛灞辨按鏂?, '闈掕棌楂樺師瀵掑尯姘存枃'];
+const SEARCH_TERMS = ['river ice', 'ice jam', 'snow', 'glacier', 'sea ice', 'permafrost', 'freeze thaw', 'cryosphere hydrology', 'Qilian Mountains hydrology', 'Tibetan Plateau hydrology'];
 const state = {
-  journals: [], papers: [], activeTopic: '全部', activeView: 'feed', settings: { time: '08:30' }, saved: [], cursors: {}
+  journals: [], papers: [], activeTopic: '鍏ㄩ儴', activeView: 'feed', settings: { time: '08:30' }, saved: [], cursors: {}
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -23,25 +26,28 @@ function invertAbstract(index) {
 function getTopics(paper) {
   const haystack = lower(`${paper.title} ${paper.abstract}`);
   const map = {
-    '河冰与冰塞': ['river ice', 'river-ice', 'ice cover', 'ice jam', 'ice-jam'],
-    '降雪与积雪': ['snow', 'snowpack', 'snowfall', 'snowmelt'],
-    '冰川与融水': ['glacier', 'glacial', 'meltwater', 'ice sheet'],
-    '海冰': ['sea ice', 'marine ice', 'antarctic ice', 'arctic ice'],
-    '冻土与冻融': ['permafrost', 'freeze-thaw', 'freeze thaw', 'seasonal frost'],
-    '冰冻圈水文': ['cryosphere', 'cold region', 'cold-region', 'hydrolog', 'runoff'],
-    '遥感与模型': ['remote sensing', 'satellite', 'sar', 'model', 'machine learning'],
-    '冰雪灾害': ['avalanche', 'icing', 'ice flood', 'frost hazard']
+    '娌冲啺': ['river ice', 'river-ice', 'riverine ice', 'ice cover'],
+    '鍐板': ['ice jam', 'ice-jam', 'ice-jamming', 'jam flood'],
+    '闄嶉洩涓庣Н闆?: ['snow', 'snowpack', 'snowfall', 'snowmelt'],
+    '鍐板窛涓庤瀺姘?: ['glacier', 'glacial', 'meltwater', 'ice sheet'],
+    '娴峰啺': ['sea ice', 'marine ice', 'antarctic ice', 'arctic ice'],
+    '鍐诲湡涓庡喕铻?: ['permafrost', 'freeze-thaw', 'freeze thaw', 'seasonal frost'],
+    '鍐板喕鍦堟按鏂?: ['cryosphere', 'cold region', 'cold-region', 'hydrolog', 'runoff'],
+    '閬ユ劅涓庢ā鍨?: ['remote sensing', 'satellite', 'sar', 'model', 'machine learning'],
+    '鍐伴洩鐏惧': ['avalanche', 'icing', 'ice flood', 'frost hazard'],
+    '绁佽繛灞辨按鏂?: ['qilian mountains', 'qilian mountain', 'qilian shan'],
+    '闈掕棌楂樺師瀵掑尯姘存枃': ['tibetan plateau', 'qinghai-tibet', 'qinghai tibet', 'third pole']
   };
   return TOPICS.filter(topic => map[topic].some(term => haystack.includes(term))).slice(0, 3);
 }
 function articleFromOpenAlex(work) {
-  const source = work.primary_location?.source?.display_name || work.locations?.[0]?.source?.display_name || '未标注期刊';
+  const source = work.primary_location?.source?.display_name || work.locations?.[0]?.source?.display_name || '鏈爣娉ㄦ湡鍒?;
   return {
     id: work.id,
-    title: work.title || '未提供标题',
+    title: work.title || '鏈彁渚涙爣棰?,
     journal: source,
     date: work.publication_date,
-    authors: (work.authorships || []).slice(0, 4).map(a => a.author?.display_name).filter(Boolean).join(' · ') || '作者信息待补充',
+    authors: (work.authorships || []).slice(0, 4).map(a => a.author?.display_name).filter(Boolean).join(' 路 ') || '浣滆€呬俊鎭緟琛ュ厖',
     abstract: invertAbstract(work.abstract_inverted_index),
     url: work.doi ? `https://doi.org/${work.doi.replace('https://doi.org/', '')}` : work.primary_location?.landing_page_url || work.id,
     cited: work.cited_by_count || 0
@@ -84,11 +90,11 @@ async function loadPapers() {
     state.papers = [];
     await getNextBatch(true);
     $('#status').textContent = state.papers.length
-      ? `数据来源：OpenAlex · 已用 8 组冰雪主题词检索并按期刊过滤 · 当前已显示 ${state.papers.length} 篇，不设每日篇数上限`
-      : '本次检索没有在已关注期刊中找到匹配文章。可在“期刊来源”中扩大追踪范围，或稍后重试。';
+      ? `鏁版嵁鏉ユ簮锛歄penAlex 路 宸茬敤 10 缁勫啺闆笌瀵掑尯涓婚璇嶆绱㈠苟鎸夋湡鍒婅繃婊?路 褰撳墠宸叉樉绀?${state.papers.length} 绡囷紝涓嶈姣忔棩绡囨暟涓婇檺`
+      : '鏈妫€绱㈡病鏈夊湪宸插叧娉ㄦ湡鍒婁腑鎵惧埌鍖归厤鏂囩珷銆傚彲鍦ㄢ€滄湡鍒婃潵婧愨€濅腑鎵╁ぇ杩借釜鑼冨洿锛屾垨绋嶅悗閲嶈瘯銆?;
   } catch (error) {
     state.papers = [];
-    $('#status').textContent = '暂时无法连接 OpenAlex。请检查网络后重试；网页会保留你的期刊和推送设置。';
+    $('#status').textContent = '鏆傛椂鏃犳硶杩炴帴 OpenAlex銆傝妫€鏌ョ綉缁滃悗閲嶈瘯锛涚綉椤典細淇濈暀浣犵殑鏈熷垔鍜屾帹閫佽缃€?;
   }
   $('#loading').classList.add('hidden');
   $('#paperList').classList.remove('hidden');
@@ -97,43 +103,43 @@ async function loadPapers() {
 
 async function loadMorePapers() {
   $('#loadMoreButton').disabled = true;
-  $('#loadMoreButton').textContent = '正在继续检索…';
+  $('#loadMoreButton').textContent = '姝ｅ湪缁х画妫€绱⑩€?;
   try {
     await getNextBatch();
-    $('#status').textContent = `数据来源：OpenAlex · 已显示 ${state.papers.length} 篇匹配文章，不设上限，可继续加载。`;
+    $('#status').textContent = `鏁版嵁鏉ユ簮锛歄penAlex 路 宸叉樉绀?${state.papers.length} 绡囧尮閰嶆枃绔狅紝涓嶈涓婇檺锛屽彲缁х画鍔犺浇銆俙;
   } catch (error) {
-    $('#status').textContent = '继续检索时遇到网络问题，请稍后重试。';
+    $('#status').textContent = '缁х画妫€绱㈡椂閬囧埌缃戠粶闂锛岃绋嶅悗閲嶈瘯銆?;
   }
   $('#loadMoreButton').disabled = false;
-  $('#loadMoreButton').textContent = '加载更多匹配文章';
+  $('#loadMoreButton').textContent = '鍔犺浇鏇村鍖归厤鏂囩珷';
   render();
 }
 
 function paperMatches(paper) {
   const query = lower($('#searchInput').value.trim());
-  const topicOk = state.activeTopic === '全部' || getTopics(paper).includes(state.activeTopic);
+  const topicOk = state.activeTopic === '鍏ㄩ儴' || getTopics(paper).includes(state.activeTopic);
   return sourceMatches(paper.journal) && topicOk && (!query || lower(`${paper.title} ${paper.journal} ${paper.authors} ${paper.abstract}`).includes(query));
 }
 function renderPapers(target, list) {
   target.innerHTML = '';
   if (!list.length) {
-    target.innerHTML = `<div class="loading">没有找到匹配文献。${state.papers.length ? '试试更换主题或搜索词。' : '点击“获取最新文献”重新检索。'}</div>`;
+    target.innerHTML = `<div class="loading">娌℃湁鎵惧埌鍖归厤鏂囩尞銆?{state.papers.length ? '璇曡瘯鏇存崲涓婚鎴栨悳绱㈣瘝銆? : '鐐瑰嚮鈥滆幏鍙栨渶鏂版枃鐚€濋噸鏂版绱€?}</div>`;
     return;
   }
   list.forEach(paper => {
     const node = $('#paperTemplate').content.cloneNode(true);
     node.querySelector('.journal').textContent = paper.journal;
-    node.querySelector('.date').textContent = paper.date || '日期待补充';
-    node.querySelector('.score').textContent = `引用 ${paper.cited}`;
+    node.querySelector('.date').textContent = paper.date || '鏃ユ湡寰呰ˉ鍏?;
+    node.querySelector('.score').textContent = `寮曠敤 ${paper.cited}`;
     node.querySelector('.paper-title').textContent = paper.title;
     node.querySelector('.authors').textContent = paper.authors;
-    const abstract = paper.abstract || '该条目暂未提供可公开获取的摘要。';
-    node.querySelector('.abstract').textContent = abstract.length > 310 ? `${abstract.slice(0, 310)}…` : abstract;
+    const abstract = paper.abstract || '璇ユ潯鐩殏鏈彁渚涘彲鍏紑鑾峰彇鐨勬憳瑕併€?;
+    node.querySelector('.abstract').textContent = abstract.length > 310 ? `${abstract.slice(0, 310)}鈥 : abstract;
     const tags = node.querySelector('.tags');
-    (getTopics(paper).length ? getTopics(paper) : ['寒区研究']).forEach(tag => { const span = document.createElement('span'); span.className = 'tag'; span.textContent = tag; tags.append(span); });
+    (getTopics(paper).length ? getTopics(paper) : ['瀵掑尯鐮旂┒']).forEach(tag => { const span = document.createElement('span'); span.className = 'tag'; span.textContent = tag; tags.append(span); });
     const bookmark = node.querySelector('.bookmark');
     const saved = state.saved.some(item => item.id === paper.id);
-    bookmark.textContent = saved ? '♥' : '♡'; bookmark.classList.toggle('saved', saved);
+    bookmark.textContent = saved ? '鈾? : '鈾?; bookmark.classList.toggle('saved', saved);
     bookmark.addEventListener('click', () => toggleSaved(paper));
     const link = node.querySelector('.read'); link.href = paper.url;
     target.append(node);
@@ -141,14 +147,14 @@ function renderPapers(target, list) {
 }
 function renderChips() {
   const container = $('#topicChips'); container.innerHTML = '';
-  ['全部', ...TOPICS].forEach(topic => { const button = document.createElement('button'); button.className = `chip ${state.activeTopic === topic ? 'active' : ''}`; button.textContent = topic; button.onclick = () => { state.activeTopic = topic; render(); }; container.append(button); });
+  ['鍏ㄩ儴', ...TOPICS].forEach(topic => { const button = document.createElement('button'); button.className = `chip ${state.activeTopic === topic ? 'active' : ''}`; button.textContent = topic; button.onclick = () => { state.activeTopic = topic; render(); }; container.append(button); });
 }
 function renderSources() {
   const query = lower($('#journalSearch').value.trim());
   const list = $('#journalList'); list.innerHTML = '';
   state.journals.map((journal, index) => ({ journal, index })).filter(({ journal }) => !query || lower(`${journal.name} ${journal.field}`).includes(query)).forEach(({ journal, index }) => {
     const item = document.createElement('div'); item.className = 'journal-item';
-    item.innerHTML = `<div><span class="journal-name">${escapeHtml(journal.name)}</span><span class="journal-field">${escapeHtml(journal.field)}</span></div><label class="switch"><input type="checkbox" ${journal.active ? 'checked' : ''} aria-label="追踪 ${escapeHtml(journal.name)}"><span class="slider"></span></label>`;
+    item.innerHTML = `<div><span class="journal-name">${escapeHtml(journal.name)}</span><span class="journal-field">${escapeHtml(journal.field)}</span></div><label class="switch"><input type="checkbox" ${journal.active ? 'checked' : ''} aria-label="杩借釜 ${escapeHtml(journal.name)}"><span class="slider"></span></label>`;
     item.querySelector('input').addEventListener('change', event => { state.journals[index].active = event.target.checked; saveJournals(); renderStats(); });
     list.append(item);
   });
@@ -179,21 +185,21 @@ function showView(view) {
   document.querySelectorAll('.nav').forEach(button => button.classList.toggle('active', button.dataset.view === view));
   const feed = view === 'feed';
   $('#digestPanel').classList.toggle('hidden', !feed); $('#feedToolbar').classList.toggle('hidden', !feed); $('#paperList').classList.toggle('hidden', !feed); $('#sourceView').classList.toggle('hidden', view !== 'sources'); $('#savedView').classList.toggle('hidden', view !== 'saved'); $('#loading').classList.toggle('hidden', !feed || $('#loading').classList.contains('hidden'));
-  $('#viewTitle').textContent = view === 'feed' ? '今日文献速递' : view === 'sources' ? '期刊来源' : '我的收藏';
-  $('#viewSubtitle').textContent = view === 'feed' ? '从追踪期刊中甄选与河冰、冰冻圈和寒区水文相关的研究' : view === 'sources' ? '管理每日检索使用的期刊范围' : '你标记保存的文献会保存在当前浏览器中';
+  $('#viewTitle').textContent = view === 'feed' ? '浠婃棩鏂囩尞閫熼€? : view === 'sources' ? '鏈熷垔鏉ユ簮' : '鎴戠殑鏀惰棌';
+  $('#viewSubtitle').textContent = view === 'feed' ? '浠庤拷韪湡鍒婁腑鐢勯€変笌娌冲啺銆佸啺鍐诲湀鍜屽瘨鍖烘按鏂囩浉鍏崇殑鐮旂┒' : view === 'sources' ? '绠＄悊姣忔棩妫€绱娇鐢ㄧ殑鏈熷垔鑼冨洿' : '浣犳爣璁颁繚瀛樼殑鏂囩尞浼氫繚瀛樺湪褰撳墠娴忚鍣ㄤ腑';
 }
 async function requestNotification() {
-  if (!('Notification' in window)) return alert('当前浏览器不支持通知。');
+  if (!('Notification' in window)) return alert('褰撳墠娴忚鍣ㄤ笉鏀寔閫氱煡銆?);
   const permission = await Notification.requestPermission();
-  $('#notificationButton').textContent = permission === 'granted' ? '浏览器提醒已开启' : '未授予提醒权限';
-  if (permission === 'granted') new Notification('冰川信使已准备就绪', { body: `每天 ${state.settings.time} 为你检查河冰与寒区水文新文献。` });
+  $('#notificationButton').textContent = permission === 'granted' ? '娴忚鍣ㄦ彁閱掑凡寮€鍚? : '鏈巿浜堟彁閱掓潈闄?;
+  if (permission === 'granted') new Notification('鍐板窛淇′娇宸插噯澶囧氨缁?, { body: `姣忓ぉ ${state.settings.time} 涓轰綘妫€鏌ユ渤鍐颁笌瀵掑尯姘存枃鏂版枃鐚€俙 });
 }
 function checkDailyDigest() {
   const now = new Date(); const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Shanghai' }).format(now);
   const key = `cryo-digest-${localDate(now)}`;
   if (clock === state.settings.time && !localStorage.getItem(key)) {
     localStorage.setItem(key, 'sent');
-    loadPapers().then(() => { if (Notification.permission === 'granted') new Notification('今日河冰与寒区水文速递', { body: `已发现 ${state.papers.length} 篇匹配文章，点击打开网页查看。` }); });
+    loadPapers().then(() => { if (Notification.permission === 'granted') new Notification('浠婃棩娌冲啺涓庡瘨鍖烘按鏂囬€熼€?, { body: `宸插彂鐜?${state.papers.length} 绡囧尮閰嶆枃绔狅紝鐐瑰嚮鎵撳紑缃戦〉鏌ョ湅銆俙 }); });
   }
 }
 async function init() {
@@ -203,13 +209,14 @@ async function init() {
   state.saved = getStore('cryo-saved', []);
   state.settings = { ...state.settings, ...getStore('cryo-settings', {}) };
   $('#dateLabel').textContent = prettyDate(); $('#timeInput').value = state.settings.time;
-  $('#notificationButton').textContent = window.Notification?.permission === 'granted' ? '浏览器提醒已开启' : '开启浏览器提醒';
+  $('#notificationButton').textContent = window.Notification?.permission === 'granted' ? '娴忚鍣ㄦ彁閱掑凡寮€鍚? : '寮€鍚祻瑙堝櫒鎻愰啋';
   document.querySelectorAll('.nav').forEach(button => button.onclick = () => showView(button.dataset.view));
   $('#refreshButton').onclick = loadPapers; $('#notificationButton').onclick = requestNotification; $('#settingsButton').onclick = () => $('#settingsDialog').showModal();
   $('#searchInput').addEventListener('input', render); $('#journalSearch').addEventListener('input', renderSources);
   $('#saveSettings').addEventListener('click', () => { state.settings = { time: $('#timeInput').value }; setStore('cryo-settings', state.settings); renderStats(); });
-  $('#resetButton').onclick = () => { if (confirm('确定清除本浏览器中的期刊开关、收藏和推送设置吗？')) { ['cryo-journals', 'cryo-saved', 'cryo-settings'].forEach(key => localStorage.removeItem(key)); location.reload(); } };
+  $('#resetButton').onclick = () => { if (confirm('纭畾娓呴櫎鏈祻瑙堝櫒涓殑鏈熷垔寮€鍏炽€佹敹钘忓拰鎺ㄩ€佽缃悧锛?)) { ['cryo-journals', 'cryo-saved', 'cryo-settings'].forEach(key => localStorage.removeItem(key)); location.reload(); } };
   $('#loadMoreButton').onclick = loadMorePapers;
   render(); loadPapers(); setInterval(checkDailyDigest, 30 * 1000);
 }
 init();
+
