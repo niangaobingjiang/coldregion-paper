@@ -9,7 +9,13 @@ const lower = (value = '') => value.toLowerCase();
 const journalMatches = (name, journals) => journals.some(journal => lower(journal.name) === lower(name));
 
 function topicsFor(work) {
-  const text = lower(`${work.title} ${work.journal}`);
+  const text = lower([
+    work.title,
+    work.abstract,
+    ...(work.keywords || []),
+    ...(work.topics || []),
+    work.primaryTopic
+  ].filter(Boolean).join(' '));
   const groups = {
     '河冰': ['river ice', 'river-ice', 'riverine ice', 'ice cover'],
     '冰塞': ['ice jam', 'ice-jam', 'ice-jamming'],
@@ -31,9 +37,9 @@ async function fetchAll(term) {
     url.searchParams.set('search', term);
     url.searchParams.set('filter', `from_publication_date:${YESTERDAY},to_publication_date:${TODAY},type:article`);
     url.searchParams.set('sort', 'publication_date:desc');
-    url.searchParams.set('per-page', '200');
+    url.searchParams.set('per-page', '100');
     url.searchParams.set('cursor', cursor);
-    url.searchParams.set('select', 'id,title,doi,publication_date,authorships,primary_location,cited_by_count');
+    url.searchParams.set('select', 'id,title,doi,publication_date,authorships,primary_location,cited_by_count,abstract_inverted_index,keywords,topics,primary_topic');
     const response = await fetch(url);
     if (!response.ok) throw new Error(`OpenAlex ${response.status} for ${term}`);
     const data = await response.json();
@@ -51,9 +57,18 @@ function normalize(work) {
     journal,
     date: work.publication_date || TODAY,
     authors: (work.authorships || []).slice(0, 4).map(item => item.author?.display_name).filter(Boolean).join(', ') || '作者信息待补充',
+    abstract: invertAbstract(work.abstract_inverted_index),
+    keywords: (work.keywords || []).map(keyword => keyword.display_name).filter(Boolean),
+    topics: (work.topics || []).flatMap(topic => [topic.display_name, topic.subfield?.display_name, topic.field?.display_name]).filter(Boolean),
+    primaryTopic: work.primary_topic?.display_name || '',
     url: work.doi ? `https://doi.org/${work.doi.replace('https://doi.org/', '')}` : work.primary_location?.landing_page_url || work.id,
     cited: work.cited_by_count || 0
   };
+}
+
+function invertAbstract(index) {
+  if (!index) return '';
+  return Object.entries(index).flatMap(([word, positions]) => positions.map(position => [position, word])).sort((a, b) => a[0] - b[0]).map(([, word]) => word).join(' ');
 }
 
 function emailHtml(papers) {
