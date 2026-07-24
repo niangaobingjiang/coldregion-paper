@@ -82,12 +82,6 @@ const allWorks = (await Promise.all(SEARCH_TERMS.map(fetchAll))).flat();
 const unique = new Map();
 for (const work of allWorks.map(normalize)) if (journalMatches(work.journal, journals)) unique.set(work.id, work);
 const papers = [...unique.values()].sort((a, b) => b.date.localeCompare(a.date));
-
-for (const name of ['RESEND_API_KEY', 'DIGEST_FROM_EMAIL', 'DIGEST_TO_EMAIL']) if (!process.env[name]) throw new Error(`Missing required secret: ${name}`);
-const response = await fetch('https://api.resend.com/emails', {
-  method: 'POST',
-  headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-  body: JSON.stringify({ from: process.env.DIGEST_FROM_EMAIL, to: [process.env.DIGEST_TO_EMAIL], subject: `冰川信使 · ${TODAY} 每日文献摘要（${papers.length} 篇）`, html: emailHtml(papers) })
-});
-if (!response.ok) throw new Error(`Resend ${response.status}: ${await response.text()}`);
-console.log(`Sent ${papers.length} articles for ${TODAY}.`);
+const outputPath = process.env.DIGEST_OUTPUT_PATH || 'daily-digest.html';
+await fs.writeFile(outputPath, emailHtml(papers), 'utf8');
+console.log(JSON.stringify({ date: TODAY, papers: papers.length, outputPath }));
