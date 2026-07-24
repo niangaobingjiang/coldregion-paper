@@ -1,6 +1,3 @@
-Exit code: 0
-Wall time: 0.6 seconds
-Output:
 const TOPICS = ['娌冲啺', '鍐板', '闄嶉洩涓庣Н闆?, '鍐板窛涓庤瀺姘?, '娴峰啺', '鍐诲湡涓庡喕铻?, '鍐板喕鍦堟按鏂?, '閬ユ劅涓庢ā鍨?, '鍐伴洩鐏惧', '绁佽繛灞辨按鏂?, '闈掕棌楂樺師瀵掑尯姘存枃'];
 const SEARCH_TERMS = ['river ice', 'ice jam', 'snow', 'glacier', 'sea ice', 'permafrost', 'freeze thaw', 'cryosphere hydrology', 'Qilian Mountains hydrology', 'Tibetan Plateau hydrology'];
 const state = {
