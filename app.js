@@ -21,7 +21,13 @@ function invertAbstract(index) {
   return Object.entries(index).flatMap(([word, positions]) => positions.map(position => [position, word])).sort((a, b) => a[0] - b[0]).map(([, word]) => word).join(' ');
 }
 function getTopics(paper) {
-  const haystack = lower(`${paper.title} ${paper.abstract}`);
+  const haystack = lower([
+    paper.title,
+    paper.abstract,
+    ...(paper.keywords || []),
+    ...(paper.topics || []),
+    paper.primaryTopic
+  ].filter(Boolean).join(' '));
   const map = {
     '河冰': ['river ice', 'river-ice', 'riverine ice', 'ice cover'],
     '冰塞': ['ice jam', 'ice-jam', 'ice-jamming', 'jam flood'],
@@ -46,6 +52,9 @@ function articleFromOpenAlex(work) {
     date: work.publication_date,
     authors: (work.authorships || []).slice(0, 4).map(a => a.author?.display_name).filter(Boolean).join(' · ') || '作者信息待补充',
     abstract: invertAbstract(work.abstract_inverted_index),
+    keywords: (work.keywords || []).map(keyword => keyword.display_name).filter(Boolean),
+    topics: (work.topics || []).flatMap(topic => [topic.display_name, topic.subfield?.display_name, topic.field?.display_name]).filter(Boolean),
+    primaryTopic: work.primary_topic?.display_name || '',
     url: work.doi ? `https://doi.org/${work.doi.replace('https://doi.org/', '')}` : work.primary_location?.landing_page_url || work.id,
     cited: work.cited_by_count || 0
   };
@@ -57,9 +66,9 @@ async function fetchSearchPage(term, cursor) {
   url.searchParams.set('search', term);
   url.searchParams.set('filter', `from_publication_date:${dateOffset(120)},to_publication_date:${localDate()},type:article`);
   url.searchParams.set('sort', 'publication_date:desc');
-  url.searchParams.set('per-page', '200');
+  url.searchParams.set('per-page', '100');
   url.searchParams.set('cursor', cursor);
-  url.searchParams.set('select', 'id,title,doi,publication_date,authorships,primary_location,locations,cited_by_count');
+  url.searchParams.set('select', 'id,title,doi,publication_date,authorships,primary_location,locations,cited_by_count,abstract_inverted_index,keywords,topics,primary_topic');
   const response = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!response.ok) throw new Error(`OpenAlex ${response.status}`);
   const data = await response.json();
