@@ -23,6 +23,16 @@ npm start
 
 这是纯静态网站，可直接部署到 GitHub Pages、Cloudflare Pages、Vercel 或 Netlify。项目目前没有连接任何远程仓库或托管账户；连接后即可获得公开网址。
 
+## 每日邮件推送（Resend）
+
+仓库已包含每日 08:30（北京时间）运行的 GitHub Actions 任务。请在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 中添加以下三个 Secrets：
+
+- `RESEND_API_KEY`：Resend API key
+- `DIGEST_FROM_EMAIL`：已在 Resend 验证的发件人，例如 `冰川信使 <digest@你的域名>`
+- `DIGEST_TO_EMAIL`：接收每日摘要的邮箱
+
+添加后可在 Actions 中运行 **Send daily literature digest** 的 `Run workflow` 立即发送一封测试邮件。
+
 ## 关于真正的后台推送
 
 浏览器在完全关闭后，静态网页无法自行运行。若需要在关闭网页后仍每天推送，需要部署一个定时后端（例如 GitHub Actions、Cloudflare Workers 或 Vercel Cron）并配置 Web Push 或电子邮件服务；前端已经将期刊、主题和时间设置好，可作为该部署的界面。
