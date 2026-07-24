@@ -24,15 +24,15 @@ npm start
 
 这是纯静态网站，可直接部署到 GitHub Pages、Cloudflare Pages、Vercel 或 Netlify。项目目前没有连接任何远程仓库或托管账户；连接后即可获得公开网址。
 
-## 每日邮件推送（Resend）
+## 每日邮件推送（个人网易邮箱）
 
-仓库已包含每日 08:30（北京时间）运行的 GitHub Actions 任务。请在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 中添加以下三个 Secrets：
+仓库已包含每日 08:30（北京时间）运行的 GitHub Actions 任务。请先登录 [网易邮箱](https://mail.163.com/)，在 **设置 → POP3/SMTP/IMAP** 中开启 SMTP 服务并生成客户端授权码；然后在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 中添加以下三个 Secrets：
 
-- `RESEND_API_KEY`：Resend API key
-- `DIGEST_FROM_EMAIL`：已在 Resend 验证的发件人，例如 `冰川信使 <digest@你的域名>`
-- `DIGEST_TO_EMAIL`：接收每日摘要的邮箱
+- `SMTP_FROM_EMAIL`：`19975912758@163.com`
+- `SMTP_TO_EMAIL`：`19975912758@163.com`
+- `NETEASE_SMTP_AUTH_CODE`：网易 SMTP 客户端授权码（不是邮箱登录密码）
 
-添加后可在 Actions 中运行 **Send daily literature digest** 的 `Run workflow` 立即发送一封测试邮件。
+添加后可在 Actions 中运行 **Send daily literature digest** 的 `Run workflow` 立即发送一封测试邮件。任务通过 `smtp.163.com:465` 的 SSL/TLS 连接发送。
 
 ## 关于真正的后台推送
 
