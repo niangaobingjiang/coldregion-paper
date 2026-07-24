@@ -140,9 +140,10 @@ function renderPapers(target, list) {
     node.querySelector('.paper-title').textContent = paper.title;
     node.querySelector('.authors').textContent = paper.authors;
     const abstract = paper.abstract || '该条目暂未提供可公开获取的摘要。';
-    node.querySelector('.abstract').textContent = abstract.length > 310 ? `${abstract.slice(0, 310)}…` : abstract;
+    node.querySelector('.abstract-text').textContent = abstract.length > 420 ? `${abstract.slice(0, 420)}…` : abstract;
     const tags = node.querySelector('.tags');
     (getTopics(paper).length ? getTopics(paper) : ['寒区研究']).forEach(tag => { const span = document.createElement('span'); span.className = 'tag'; span.textContent = tag; tags.append(span); });
+    (paper.keywords || []).slice(0, 8).forEach(keyword => { const span = document.createElement('span'); span.className = 'tag keyword-tag'; span.textContent = keyword; tags.append(span); });
     const bookmark = node.querySelector('.bookmark');
     const saved = state.saved.some(item => item.id === paper.id);
     bookmark.textContent = saved ? '♥' : '♡'; bookmark.classList.toggle('saved', saved);
