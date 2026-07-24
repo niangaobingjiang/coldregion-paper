@@ -4,36 +4,35 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b2737" />
-  <title>鍐板窛淇′娇 路 娌冲啺涓庡瘨鍖烘按鏂囨瘡鏃ユ枃鐚?/title>
+  <title>冰川信使 · 河冰与寒区水文每日文献</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="shell">
     <aside class="side">
-      <a class="brand" href="#"><span class="ice">鉂?/span><span>鍐板窛淇′娇<small>CRYO 路 DAILY</small></span></a>
-      <nav><button class="nav active" data-view="feed">浠婃棩鏂囩尞 <span id="feedCount"></span></button><button class="nav" data-view="sources">鏈熷垔鏉ユ簮 <span id="sourceCount"></span></button><button class="nav" data-view="saved">鎴戠殑鏀惰棌 <span id="savedCount"></span></button></nav>
-      <div class="side-bottom"><div class="rule"></div><p>鍩轰簬浣犵殑鏈熷垔娓呭崟<br />鑱氱劍娌冲啺涓庡瘨鍖烘按鏂?/p><button class="quiet" id="resetButton">閲嶇疆鏈湴璁剧疆</button></div>
+      <a class="brand" href="#"><span class="ice">❄</span><span>冰川信使<small>CRYO · DAILY</small></span></a>
+      <nav><button class="nav active" data-view="feed">今日文献 <span id="feedCount"></span></button><button class="nav" data-view="sources">期刊来源 <span id="sourceCount"></span></button><button class="nav" data-view="saved">我的收藏 <span id="savedCount"></span></button></nav>
+      <div class="side-bottom"><div class="rule"></div><p>基于你的期刊清单<br />聚焦河冰与寒区水文</p><button class="quiet" id="resetButton">重置本地设置</button></div>
     </aside>
     <section class="content">
       <header>
-        <div><p class="eyebrow" id="dateLabel"></p><h1 id="viewTitle">浠婃棩鏂囩尞閫熼€?/h1><p class="subtitle" id="viewSubtitle">浠庤拷韪湡鍒婁腑鐢勯€変笌娌冲啺銆佸啺鍐诲湀鍜屽瘨鍖烘按鏂囩浉鍏崇殑鐮旂┒</p></div>
-        <div class="header-actions"><button class="outline" id="notificationButton">寮€鍚祻瑙堝櫒鎻愰啋</button><button class="primary" id="refreshButton"><span>鈫?/span> 鑾峰彇鏈€鏂版枃鐚?/button></div>
+        <div><p class="eyebrow" id="dateLabel"></p><h1 id="viewTitle">今日文献速递</h1><p class="subtitle" id="viewSubtitle">从追踪期刊中甄选与河冰、冰冻圈和寒区水文相关的研究</p></div>
+        <div class="header-actions"><button class="outline" id="notificationButton">开启浏览器提醒</button><button class="primary" id="refreshButton"><span>↻</span> 获取最新文献</button></div>
       </header>
 
-      <section class="digest" id="digestPanel"><div class="digest-symbol">鈱?/div><div><p class="eyebrow">DAILY BRIEF</p><h2>璁╀粖澶╃殑姣忎竴绡囪鏂囷紝閮芥洿鎺ヨ繎浣犵殑鐮旂┒銆?/h2><p>宸插叧娉?<strong id="activeJournalCount">0</strong> 鏈湡鍒?路 <strong>11 绫?/strong>鍐伴洩涓庨珮鍘熶富棰?路 姣忓ぉ <strong id="pushTime">08:30</strong> 鐢熸垚鎽樿</p></div><button id="settingsButton">鎺ㄩ€佽缃?<span>鈫?/span></button></section>
+      <section class="digest" id="digestPanel"><div class="digest-symbol">⌁</div><div><p class="eyebrow">DAILY BRIEF</p><h2>让今天的每一篇论文，都更接近你的研究。</h2><p>已关注 <strong id="activeJournalCount">0</strong> 本期刊 · <strong>11 类</strong>冰雪与高原主题 · 每天 <strong id="pushTime">08:30</strong> 生成摘要</p></div><button id="settingsButton">推送设置 <span>→</span></button></section>
 
-      <section class="toolbar" id="feedToolbar"><div class="chips" id="topicChips"></div><label class="search"><span>鈱?/span><input id="searchInput" placeholder="鎼滅储鏍囬銆佹湡鍒婃垨鍏抽敭璇? /></label></section>
-      <div class="loading" id="loading"><span></span> 姝ｅ湪杩炴帴鏂囩尞鏁版嵁搴撯€?/div>
+      <section class="toolbar" id="feedToolbar"><div class="chips" id="topicChips"></div><label class="search"><span>⌕</span><input id="searchInput" placeholder="搜索标题、期刊或关键词" /></label></section>
+      <div class="loading" id="loading"><span></span> 正在连接文献数据库…</div>
       <section class="papers" id="paperList"></section>
-      <button class="load-more hidden" id="loadMoreButton">鍔犺浇鏇村鍖归厤鏂囩珷</button>
-      <section class="source-view hidden" id="sourceView"><div class="source-top"><p>浣犳彁渚涚殑 Excel 宸插鍏?<strong>64</strong> 鏈湡鍒娿€傚叧闂殑鏈熷垔涓嶄細鍙備笌姣忔棩妫€绱€?/p><label class="search"><span>鈱?/span><input id="journalSearch" placeholder="鎼滅储鏈熷垔鍚嶇О" /></label></div><div id="journalList" class="journal-list"></div></section>
+      <button class="load-more hidden" id="loadMoreButton">加载更多匹配文章</button>
+      <section class="source-view hidden" id="sourceView"><div class="source-top"><p>你提供的 Excel 已导入 <strong>64</strong> 本期刊。关闭的期刊不会参与每日检索。</p><label class="search"><span>⌕</span><input id="journalSearch" placeholder="搜索期刊名称" /></label></div><div id="journalList" class="journal-list"></div></section>
       <section class="source-view hidden" id="savedView"><div id="savedList" class="papers"></div></section>
       <p class="status" id="status"></p>
     </section>
   </main>
-  <dialog id="settingsDialog"><form method="dialog"><button class="close" value="cancel">脳</button><p class="eyebrow">DAILY DELIVERY</p><h2>姣忔棩鎺ㄩ€佽缃?/h2><p class="dialog-copy">缃戦〉鍦ㄦ墦寮€鏈熼棿浼氫簬鎸囧畾鏃跺埢妫€鏌ユ柊鐨勫啺闆浉鍏虫枃鐚€傛瘡鏃ョ粨鏋滀笉璁剧瘒鏁颁笂闄愶紱鍙悓鏃跺紑鍚祻瑙堝櫒鎻愰啋銆?/p><label>鎺ㄩ€佹椂闂?<input type="time" id="timeInput" value="08:30" /></label><button class="primary" id="saveSettings" value="default">淇濆瓨璁剧疆</button></form></dialog>
-  <template id="paperTemplate"><article class="paper"><div class="paper-main"><div class="paper-meta"><span class="journal"></span><span class="dot">路</span><span class="date"></span><span class="score"></span></div><h2 class="paper-title"></h2><p class="authors"></p><p class="abstract"></p><div class="tags"></div></div><div class="paper-actions"><button class="bookmark" aria-label="鏀惰棌鏂囩珷">鈾?/button><a class="read" target="_blank" rel="noreferrer">闃呰鍏ㄦ枃 <span>鈫?/span></a></div></article></template>
+  <dialog id="settingsDialog"><form method="dialog"><button class="close" value="cancel">×</button><p class="eyebrow">DAILY DELIVERY</p><h2>每日推送设置</h2><p class="dialog-copy">网页在打开期间会于指定时刻检查新的冰雪相关文献。每日结果不设篇数上限；可同时开启浏览器提醒。</p><label>推送时间 <input type="time" id="timeInput" value="08:30" /></label><button class="primary" id="saveSettings" value="default">保存设置</button></form></dialog>
+  <template id="paperTemplate"><article class="paper"><div class="paper-main"><div class="paper-meta"><span class="journal"></span><span class="dot">·</span><span class="date"></span><span class="score"></span></div><h2 class="paper-title"></h2><p class="authors"></p><p class="abstract"></p><div class="tags"></div></div><div class="paper-actions"><button class="bookmark" aria-label="收藏文章">♡</button><a class="read" target="_blank" rel="noreferrer">阅读全文 <span>↗</span></a></div></article></template>
   <script src="app.js"></script>
 </body>
 </html>
-
