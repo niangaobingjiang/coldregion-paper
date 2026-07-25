@@ -26,7 +26,7 @@ npm start
 
 ## 每日邮件推送（个人网易邮箱）
 
-仓库已包含每日 08:30（北京时间）运行的 GitHub Actions 任务。请先登录 [网易邮箱](https://mail.163.com/)，在 **设置 → POP3/SMTP/IMAP** 中开启 SMTP 服务并生成客户端授权码；然后在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 中添加以下三个 Secrets：
+仓库已包含每日 08:30（北京时间）运行的 GitHub Actions 任务，并在 08:45 运行一次备用检查；同一天只会发送一封邮件。请先登录 [网易邮箱](https://mail.163.com/)，在 **设置 → POP3/SMTP/IMAP** 中开启 SMTP 服务并生成客户端授权码；然后在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 中添加以下三个 Secrets：
 
 - `SMTP_FROM_EMAIL`：`19975912758@163.com`
 - `SMTP_TO_EMAIL`：`19975912758@163.com`
