@@ -1,16 +1,19 @@
-name: Send daily literature digest
+name: Send literature digest
 
 on:
-  schedule:
-    - cron: '30 0 * * *'
-    - cron: '45 0 * * *'
   workflow_dispatch:
+    inputs:
+      digest_days:
+        description: Number of calendar days to include (1-14)
+        required: false
+        default: '1'
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: daily-literature-digest
+  group: literature-digest
   cancel-in-progress: false
 
 jobs:
@@ -18,38 +21,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - id: day
-        run: echo "date=$(TZ=Asia/Shanghai date +%F)" >> "$GITHUB_OUTPUT"
-      - id: sent-marker
-        if: github.event_name == 'schedule'
-        uses: actions/cache/restore@v4
-        with:
-          path: .daily-digest-sent
-          key: daily-digest-${{ steps.day.outputs.date }}
       - uses: actions/setup-node@v4
-        if: github.event_name != 'schedule' || steps.sent-marker.outputs.cache-hit != 'true'
         with:
           node-version: 22
       - name: Search papers and build digest
-        if: github.event_name != 'schedule' || steps.sent-marker.outputs.cache-hit != 'true'
         env:
           DIGEST_OUTPUT_PATH: daily-digest.html
+          DIGEST_DAYS: ${{ inputs.digest_days || '1' }}
         run: node scripts/send-daily-digest.mjs
       - name: Send through NetEase SMTP
-        if: github.event_name != 'schedule' || steps.sent-marker.outputs.cache-hit != 'true'
         env:
           SMTP_HOST: smtp.163.com
           SMTP_PORT: 465
           SMTP_FROM_EMAIL: ${{ secrets.SMTP_FROM_EMAIL }}
           SMTP_TO_EMAIL: ${{ secrets.SMTP_TO_EMAIL }}
           NETEASE_SMTP_AUTH_CODE: ${{ secrets.NETEASE_SMTP_AUTH_CODE }}
+          DIGEST_DAYS: ${{ inputs.digest_days || '1' }}
         run: python scripts/send-netease-smtp.py daily-digest.html
-      - name: Mark today's scheduled email as sent
-        if: github.event_name == 'schedule' && steps.sent-marker.outputs.cache-hit != 'true'
-        run: touch .daily-digest-sent
-      - name: Store today's send marker
-        if: github.event_name == 'schedule' && steps.sent-marker.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: .daily-digest-sent
-          key: daily-digest-${{ steps.day.outputs.date }}
