@@ -2,7 +2,9 @@ import fs from 'node:fs/promises';
 
 const SEARCH_TERMS = ['river ice', 'ice jam', 'snow', 'glacier', 'sea ice', 'permafrost', 'freeze thaw', 'cryosphere hydrology', 'Qilian Mountains hydrology', 'Tibetan Plateau hydrology'];
 const TODAY = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).format(new Date());
-const YESTERDAY = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).format(new Date(Date.now() - 24 * 60 * 60 * 1000));
+const requestedDays = Number.parseInt(process.env.DIGEST_DAYS || '1', 10);
+const DIGEST_DAYS = Number.isInteger(requestedDays) && requestedDays >= 1 && requestedDays <= 14 ? requestedDays : 1;
+const START_DATE = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).format(new Date(Date.now() - (DIGEST_DAYS - 1) * 24 * 60 * 60 * 1000));
 
 const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const lower = (value = '') => value.toLowerCase();
@@ -35,7 +37,7 @@ async function fetchAll(term) {
   while (cursor) {
     const url = new URL('https://api.openalex.org/works');
     url.searchParams.set('search', term);
-    url.searchParams.set('filter', `from_publication_date:${YESTERDAY},to_publication_date:${TODAY},type:article`);
+    url.searchParams.set('filter', `from_publication_date:${START_DATE},to_publication_date:${TODAY},type:article`);
     url.searchParams.set('sort', 'publication_date:desc');
     url.searchParams.set('per-page', '100');
     url.searchParams.set('cursor', cursor);
@@ -84,4 +86,4 @@ for (const work of allWorks.map(normalize)) if (journalMatches(work.journal, jou
 const papers = [...unique.values()].sort((a, b) => b.date.localeCompare(a.date));
 const outputPath = process.env.DIGEST_OUTPUT_PATH || 'daily-digest.html';
 await fs.writeFile(outputPath, emailHtml(papers), 'utf8');
-console.log(JSON.stringify({ date: TODAY, papers: papers.length, outputPath }));
+console.log(JSON.stringify({ fromDate: START_DATE, toDate: TODAY, digestDays: DIGEST_DAYS, papers: papers.length, outputPath }));
