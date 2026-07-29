@@ -9,7 +9,7 @@ on:
       digest_days:
         description: Number of calendar days to include (1-14)
         required: false
-        default: '1'
+        default: '3'
         type: string
 
 permissions:
@@ -30,7 +30,7 @@ jobs:
       - name: Search papers and build digest
         env:
           DIGEST_OUTPUT_PATH: daily-digest.html
-          DIGEST_DAYS: ${{ inputs.digest_days || '1' }}
+          DIGEST_DAYS: ${{ inputs.digest_days || '3' }}
         run: node scripts/send-daily-digest.mjs
       - name: Send through NetEase SMTP
         env:
@@ -39,5 +39,5 @@ jobs:
           SMTP_FROM_EMAIL: ${{ secrets.SMTP_FROM_EMAIL }}
           SMTP_TO_EMAIL: ${{ secrets.SMTP_TO_EMAIL }}
           NETEASE_SMTP_AUTH_CODE: ${{ secrets.NETEASE_SMTP_AUTH_CODE }}
-          DIGEST_DAYS: ${{ inputs.digest_days || '1' }}
+          DIGEST_DAYS: ${{ inputs.digest_days || '3' }}
         run: python scripts/send-netease-smtp.py daily-digest.html
