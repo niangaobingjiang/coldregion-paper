@@ -1,6 +1,12 @@
 import fs from 'node:fs/promises';
 
-const SEARCH_TERMS = ['river ice', 'ice jam', 'snow', 'glacier', 'sea ice', 'permafrost', 'freeze thaw', 'cryosphere hydrology', 'Qilian Mountains hydrology', 'Tibetan Plateau hydrology'];
+const DEFAULT_SEARCH_TERMS = ['river ice', 'ice jam', 'snow', 'glacier', 'sea ice', 'permafrost', 'freeze thaw', 'cryosphere hydrology', 'Qilian Mountains hydrology', 'Tibetan Plateau hydrology'];
+const requestedProfileId = (process.env.DIGEST_PROFILE || '').trim();
+const profileId = requestedProfileId === 'default' ? '' : requestedProfileId;
+const profiles = JSON.parse(await fs.readFile(new URL('../config/member-digest-profiles.json', import.meta.url), 'utf8'));
+const profile = profileId ? profiles[profileId] : null;
+if (profileId && !profile) throw new Error(`Unknown DIGEST_PROFILE: ${profileId}`);
+const SEARCH_TERMS = profile?.searchTerms || DEFAULT_SEARCH_TERMS;
 const TODAY = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).format(new Date());
 const requestedDays = Number.parseInt(process.env.DIGEST_DAYS || '1', 10);
 const DIGEST_DAYS = Number.isInteger(requestedDays) && requestedDays >= 1 && requestedDays <= 14 ? requestedDays : 1;
@@ -9,6 +15,7 @@ const START_DATE = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' 
 const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const lower = (value = '') => value.toLowerCase();
 const journalMatches = (name, journals) => journals.some(journal => lower(journal.name) === lower(name));
+const profileJournalMatches = (name) => profile.journals.some(journal => lower(journal) === lower(name));
 
 function topicsFor(work) {
   const text = lower([
@@ -25,10 +32,18 @@ function topicsFor(work) {
     '冰川与融水': ['glacier', 'glacial', 'meltwater', 'ice sheet'],
     '海冰': ['sea ice', 'marine ice', 'antarctic ice', 'arctic ice'],
     '冻土与冻融': ['permafrost', 'freeze-thaw', 'freeze thaw'],
+    '冰冻圈水文': ['cryosphere hydrology', 'glaciohydrology'],
+    '遥感与模型': ['remote sensing', 'satellite', 'machine learning', 'modeling', 'modelling'],
     '祁连山水文': ['qilian mountains', 'qilian mountain', 'qilian shan'],
     '青藏高原寒区水文': ['tibetan plateau', 'qinghai-tibet', 'third pole']
   };
   return Object.entries(groups).filter(([, terms]) => terms.some(term => text.includes(term))).map(([topic]) => topic).slice(0, 3);
+}
+
+function matchesProfile(work) {
+  if (!profile) return true;
+  const text = lower([work.title, work.abstract, ...(work.keywords || []), ...(work.topics || []), work.primaryTopic].filter(Boolean).join(' '));
+  return profile.matchTerms.some(term => text.includes(lower(term)));
 }
 
 async function fetchAll(term) {
@@ -75,15 +90,22 @@ function invertAbstract(index) {
 
 function emailHtml(papers) {
   const rows = papers.map(paper => `<article style="padding:18px 0;border-bottom:1px solid #dbe5e5"><p style="margin:0 0 7px;color:#207078;font-size:12px">${escapeHtml(paper.journal)} · ${escapeHtml(paper.date)} · 引用 ${paper.cited}</p><h2 style="margin:0 0 8px;font-size:18px;line-height:1.45"><a href="${escapeHtml(paper.url)}" style="color:#112b36;text-decoration:none">${escapeHtml(paper.title)}</a></h2><p style="margin:0;color:#61757a;font-size:13px">${escapeHtml(paper.authors)}</p><p style="margin:9px 0 0;color:#38757a;font-size:12px">${topicsFor(paper).join(' · ') || '冰雪与寒区研究'}</p></article>`).join('');
-  const body = papers.length ? rows : '<p style="color:#61757a">今天未在已关注期刊中检索到新的冰雪与寒区水文文章。</p>';
-  return `<!doctype html><html><body style="margin:0;background:#f4f7f6;font-family:Arial,'Microsoft YaHei',sans-serif;color:#112b36"><main style="max-width:760px;margin:0 auto;background:#fff;padding:34px 38px"><p style="margin:0;color:#207078;font-size:11px;letter-spacing:1.2px">CRYO · DAILY DIGEST</p><h1 style="margin:10px 0;font-size:28px">冰川信使 · 每日文献摘要</h1><p style="margin:0 0 24px;color:#61757a">${TODAY} · 检索到 ${papers.length} 篇匹配文章 · 不设篇数上限</p>${body}<p style="margin:28px 0 0;color:#7a9094;font-size:12px">本邮件由冰川信使自动生成。<a href="https://niangaobingjiang.github.io/coldregion-paper/" style="color:#207078">打开网页</a></p></main></body></html>`;
+  const profileIntro = profile
+    ? `<section style="margin:0 0 22px;padding:14px 16px;background:#edf7f6;border-left:4px solid #207078"><strong>本期偏好：${escapeHtml(profile.name)}</strong><br><span style="color:#61757a;font-size:13px">关注领域：${escapeHtml(profile.fields.join('、'))}；关注期刊：${profile.journals.length} 种${profile.supplement ? `；补充检索：${escapeHtml(profile.supplement)}` : ''}</span></section>`
+    : '';
+  const body = papers.length ? rows : `<p style="color:#61757a">本检索期内未找到同时匹配${profile ? '该成员关注领域与期刊' : '已关注期刊'}的新文章。</p>`;
+  const heading = profile ? `冰川信使 · ${escapeHtml(profile.name)}的文献摘要` : '冰川信使 · 每日文献摘要';
+  return `<!doctype html><html><body style="margin:0;background:#f4f7f6;font-family:Arial,'Microsoft YaHei',sans-serif;color:#112b36"><main style="max-width:760px;margin:0 auto;background:#fff;padding:34px 38px"><p style="margin:0;color:#207078;font-size:11px;letter-spacing:1.2px">CRYO · DAILY DIGEST</p><h1 style="margin:10px 0;font-size:28px">${heading}</h1><p style="margin:0 0 24px;color:#61757a">${TODAY} · 检索到 ${papers.length} 篇匹配文章 · 不设篇数上限</p>${profileIntro}${body}<p style="margin:28px 0 0;color:#7a9094;font-size:12px">本邮件由冰川信使自动生成。<a href="https://niangaobingjiang.github.io/coldregion-paper/" style="color:#207078">打开网页</a></p></main></body></html>`;
 }
 
 const journals = JSON.parse(await fs.readFile(new URL('../journals.json', import.meta.url), 'utf8'));
 const allWorks = (await Promise.all(SEARCH_TERMS.map(fetchAll))).flat();
 const unique = new Map();
-for (const work of allWorks.map(normalize)) if (journalMatches(work.journal, journals)) unique.set(work.id, work);
+for (const work of allWorks.map(normalize)) {
+  const journalIsWanted = profile ? profileJournalMatches(work.journal) : journalMatches(work.journal, journals);
+  if (journalIsWanted && matchesProfile(work)) unique.set(work.id, work);
+}
 const papers = [...unique.values()].sort((a, b) => b.date.localeCompare(a.date));
 const outputPath = process.env.DIGEST_OUTPUT_PATH || 'daily-digest.html';
 await fs.writeFile(outputPath, emailHtml(papers), 'utf8');
-console.log(JSON.stringify({ fromDate: START_DATE, toDate: TODAY, digestDays: DIGEST_DAYS, papers: papers.length, outputPath }));
+console.log(JSON.stringify({ fromDate: START_DATE, toDate: TODAY, digestDays: DIGEST_DAYS, profile: profileId || 'default', papers: papers.length, outputPath }));
