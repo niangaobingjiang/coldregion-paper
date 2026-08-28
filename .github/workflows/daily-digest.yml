@@ -11,6 +11,21 @@ on:
         required: false
         default: '3'
         type: string
+      profile:
+        description: Member profile to use; leave as default for the shared digest
+        required: false
+        default: default
+        type: choice
+        options:
+          - default
+          - su-haiyang
+          - yang-yaru
+          - he-rui
+      preview:
+        description: Prefix the email subject with [试发]
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -31,6 +46,7 @@ jobs:
         env:
           DIGEST_OUTPUT_PATH: daily-digest.html
           DIGEST_DAYS: ${{ inputs.digest_days || '3' }}
+          DIGEST_PROFILE: ${{ inputs.profile || '' }}
         run: node scripts/send-daily-digest.mjs
       - name: Send through NetEase SMTP
         env:
@@ -40,4 +56,6 @@ jobs:
           SMTP_TO_EMAIL: ${{ secrets.SMTP_TO_EMAIL }}
           NETEASE_SMTP_AUTH_CODE: ${{ secrets.NETEASE_SMTP_AUTH_CODE }}
           DIGEST_DAYS: ${{ inputs.digest_days || '3' }}
+          DIGEST_PROFILE: ${{ inputs.profile || '' }}
+          DIGEST_PREVIEW: ${{ inputs.preview || 'false' }}
         run: python scripts/send-netease-smtp.py daily-digest.html
