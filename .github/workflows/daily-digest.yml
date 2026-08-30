@@ -35,7 +35,44 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  send-digest:
+  send-scheduled-members:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: su-haiyang
+            recipient_secret: SU_HAIYANG_EMAIL
+          - profile: yang-yaru
+            recipient_secret: YANG_YARU_EMAIL
+          - profile: he-rui
+            recipient_secret: HE_RUI_EMAIL
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Search papers and build member digest
+        env:
+          DIGEST_OUTPUT_PATH: daily-digest.html
+          DIGEST_DAYS: '3'
+          DIGEST_PROFILE: ${{ matrix.profile }}
+        run: node scripts/send-daily-digest.mjs
+      - name: Send member digest through NetEase SMTP
+        env:
+          SMTP_HOST: smtp.163.com
+          SMTP_PORT: 465
+          SMTP_FROM_EMAIL: ${{ secrets.SMTP_FROM_EMAIL }}
+          SMTP_TO_EMAIL: ${{ secrets[matrix.recipient_secret] }}
+          NETEASE_SMTP_AUTH_CODE: ${{ secrets.NETEASE_SMTP_AUTH_CODE }}
+          DIGEST_DAYS: '3'
+          DIGEST_PROFILE: ${{ matrix.profile }}
+          DIGEST_PREVIEW: 'false'
+        run: python scripts/send-netease-smtp.py daily-digest.html
+
+  send-manual-digest:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
