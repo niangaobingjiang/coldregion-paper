@@ -20,6 +20,7 @@ profile_names = {
     "su-haiyang": "苏海洋",
     "yang-yaru": "杨雅茹",
     "he-rui": "何锐",
+    "feng-yuanbao": "冯元宝",
 }
 profile_name = profile_names.get(profile_id)
 is_preview = os.environ.get("DIGEST_PREVIEW", "false").lower() == "true"
