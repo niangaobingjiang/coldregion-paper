@@ -39,5 +39,20 @@
       "Journal of Geophysical Research: Earth Surface", "Earth Surface Dynamics", "Earth Surface Processes and Landforms", "Geomorphology", "Journal of Geophysical Research: Atmospheres", "Journal of Geophysical Research: Biogeosciences", "Biogeosciences", "Earth's Future", "Global Change Biology", "The Cryosphere", "Earth System Dynamics", "Cold Regions Science and Technology", "Journal of Glaciology", "Annals of Glaciology", "Polar Science", "Polar Research", "Arctic, Antarctic, and Alpine Research", "Permafrost and Periglacial Processes",
       "ISPRS Journal of Photogrammetry and Remote Sensing", "International Journal of Applied Earth Observation and Geoinformation", "GIScience & Remote Sensing", "Climate Dynamics"
     ]
+  },
+  "feng-yuanbao": {
+    "name": "冯元宝",
+    "fields": ["冰冻圈水文", "遥感与模型", "祁连山水文", "青藏高原寒区水文"],
+    "searchTerms": ["cryosphere hydrology", "remote sensing cryosphere", "Qilian Mountains hydrology", "Tibetan Plateau hydrology"],
+    "matchTerms": ["cryosphere hydrology", "glaciohydrology", "remote sensing", "qilian", "tibetan plateau", "qinghai-tibet", "third pole"],
+    "journals": [
+      "Nature", "Science", "Nature Communications",
+      "Nature Geoscience", "Communications Earth & Environment", "Geophysical Research Letters", "Earth and Planetary Science Letters",
+      "Remote Sensing of Environment", "IEEE Transactions on Geoscience and Remote Sensing", "Science of Remote Sensing",
+      "Nature Climate Change", "Reviews of Geophysics",
+      "Water Resources Research", "Hydrology and Earth System Sciences", "Journal of Hydrology", "Hydrological Processes", "Hydrological Sciences Journal", "Advances in Water Resources",
+      "Journal of Geophysical Research: Earth Surface", "Geomorphology", "River Research and Applications", "Journal of Hydraulic Engineering", "Cold Regions Science and Technology", "Journal of Glaciology",
+      "ISPRS Journal of Photogrammetry and Remote Sensing", "International Journal of Applied Earth Observation and Geoinformation", "GIScience & Remote Sensing", "Aquatic Sciences"
+    ]
   }
 }
