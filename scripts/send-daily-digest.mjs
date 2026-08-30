@@ -11,6 +11,7 @@ const TODAY = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).fo
 const requestedDays = Number.parseInt(process.env.DIGEST_DAYS || '1', 10);
 const DIGEST_DAYS = Number.isInteger(requestedDays) && requestedDays >= 1 && requestedDays <= 14 ? requestedDays : 1;
 const START_DATE = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).format(new Date(Date.now() - (DIGEST_DAYS - 1) * 24 * 60 * 60 * 1000));
+const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
 const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const lower = (value = '') => value.toLowerCase();
@@ -57,7 +58,15 @@ async function fetchAll(term) {
     url.searchParams.set('per-page', '100');
     url.searchParams.set('cursor', cursor);
     url.searchParams.set('select', 'id,title,doi,publication_date,authorships,primary_location,cited_by_count,abstract_inverted_index,keywords,topics,primary_topic');
-    const response = await fetch(url);
+    let response;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      response = await fetch(url);
+      if (response.status !== 429) break;
+      const retryAfter = Number(response.headers.get('retry-after'));
+      const delay = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 2000 * (attempt + 1);
+      console.warn(`OpenAlex rate limit for ${term}; retrying in ${delay}ms.`);
+      await sleep(delay);
+    }
     if (!response.ok) throw new Error(`OpenAlex ${response.status} for ${term}`);
     const data = await response.json();
     collected.push(...(data.results || []));
@@ -99,7 +108,8 @@ function emailHtml(papers) {
 }
 
 const journals = JSON.parse(await fs.readFile(new URL('../journals.json', import.meta.url), 'utf8'));
-const allWorks = (await Promise.all(SEARCH_TERMS.map(fetchAll))).flat();
+const allWorks = [];
+for (const term of SEARCH_TERMS) allWorks.push(...await fetchAll(term));
 const unique = new Map();
 for (const work of allWorks.map(normalize)) {
   const journalIsWanted = profile ? profileJournalMatches(work.journal) : journalMatches(work.journal, journals);
