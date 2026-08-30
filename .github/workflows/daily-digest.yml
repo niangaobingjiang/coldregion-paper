@@ -31,6 +31,11 @@ on:
         required: false
         default: false
         type: boolean
+      send_li_hongyi:
+        description: Send the shared digest to Li Hongyi
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -54,6 +59,8 @@ jobs:
             recipient_secret: YANG_YARU_EMAIL
           - profile: he-rui
             recipient_secret: HE_RUI_EMAIL
+          - profile: default
+            recipient_secret: LI_HONGYI_EMAIL
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -78,7 +85,7 @@ jobs:
         run: python scripts/send-netease-smtp.py daily-digest.html
 
   send-manual-digest:
-    if: github.event_name == 'workflow_dispatch' && inputs.send_members != true
+    if: github.event_name == 'workflow_dispatch' && inputs.send_members != true && inputs.send_li_hongyi != true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -101,4 +108,30 @@ jobs:
           DIGEST_DAYS: ${{ inputs.digest_days || '3' }}
           DIGEST_PROFILE: ${{ inputs.profile || '' }}
           DIGEST_PREVIEW: ${{ inputs.preview || 'false' }}
+        run: python scripts/send-netease-smtp.py daily-digest.html
+
+  send-li-hongyi:
+    if: github.event_name == 'workflow_dispatch' && inputs.send_li_hongyi == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Search papers and build shared digest
+        env:
+          DIGEST_OUTPUT_PATH: daily-digest.html
+          DIGEST_DAYS: '3'
+          DIGEST_PROFILE: default
+        run: node scripts/send-daily-digest.mjs
+      - name: Send shared digest through NetEase SMTP
+        env:
+          SMTP_HOST: smtp.163.com
+          SMTP_PORT: 465
+          SMTP_FROM_EMAIL: ${{ secrets.SMTP_FROM_EMAIL }}
+          SMTP_TO_EMAIL: ${{ secrets.LI_HONGYI_EMAIL }}
+          NETEASE_SMTP_AUTH_CODE: ${{ secrets.NETEASE_SMTP_AUTH_CODE }}
+          DIGEST_DAYS: '3'
+          DIGEST_PROFILE: default
+          DIGEST_PREVIEW: 'false'
         run: python scripts/send-netease-smtp.py daily-digest.html
