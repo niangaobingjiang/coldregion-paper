@@ -21,6 +21,7 @@ on:
           - su-haiyang
           - yang-yaru
           - he-rui
+          - feng-yuanbao
       preview:
         description: Prefix the email subject with [试发]
         required: false
