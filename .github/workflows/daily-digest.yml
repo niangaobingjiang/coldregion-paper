@@ -37,6 +37,11 @@ on:
         required: false
         default: false
         type: boolean
+      send_feng_yuanbao:
+        description: Send Feng Yuanbao's personalized digest
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -62,6 +67,8 @@ jobs:
             recipient_secret: HE_RUI_EMAIL
           - profile: default
             recipient_secret: LI_HONGYI_EMAIL
+          - profile: feng-yuanbao
+            recipient_secret: FENG_YUANBAO_EMAIL
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -86,7 +93,7 @@ jobs:
         run: python scripts/send-netease-smtp.py daily-digest.html
 
   send-manual-digest:
-    if: github.event_name == 'workflow_dispatch' && inputs.send_members != true && inputs.send_li_hongyi != true
+    if: github.event_name == 'workflow_dispatch' && inputs.send_members != true && inputs.send_li_hongyi != true && inputs.send_feng_yuanbao != true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -134,5 +141,31 @@ jobs:
           NETEASE_SMTP_AUTH_CODE: ${{ secrets.NETEASE_SMTP_AUTH_CODE }}
           DIGEST_DAYS: '3'
           DIGEST_PROFILE: default
+          DIGEST_PREVIEW: 'false'
+        run: python scripts/send-netease-smtp.py daily-digest.html
+
+  send-feng-yuanbao:
+    if: github.event_name == 'workflow_dispatch' && inputs.send_feng_yuanbao == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Search papers and build Feng Yuanbao digest
+        env:
+          DIGEST_OUTPUT_PATH: daily-digest.html
+          DIGEST_DAYS: '3'
+          DIGEST_PROFILE: feng-yuanbao
+        run: node scripts/send-daily-digest.mjs
+      - name: Send Feng Yuanbao digest through NetEase SMTP
+        env:
+          SMTP_HOST: smtp.163.com
+          SMTP_PORT: 465
+          SMTP_FROM_EMAIL: ${{ secrets.SMTP_FROM_EMAIL }}
+          SMTP_TO_EMAIL: ${{ secrets.FENG_YUANBAO_EMAIL }}
+          NETEASE_SMTP_AUTH_CODE: ${{ secrets.NETEASE_SMTP_AUTH_CODE }}
+          DIGEST_DAYS: '3'
+          DIGEST_PROFILE: feng-yuanbao
           DIGEST_PREVIEW: 'false'
         run: python scripts/send-netease-smtp.py daily-digest.html
