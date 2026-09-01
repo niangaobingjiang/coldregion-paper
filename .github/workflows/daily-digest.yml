@@ -69,6 +69,8 @@ jobs:
             recipient_secret: LI_HONGYI_EMAIL
           - profile: feng-yuanbao
             recipient_secret: FENG_YUANBAO_EMAIL
+          - profile: default
+            recipient_secret: SMTP_TO_EMAIL
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
