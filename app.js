@@ -1,5 +1,5 @@
 const TOPICS = ['河冰', '冰塞', '降雪与积雪', '冰川与融水', '海冰', '冻土与冻融', '冰冻圈水文', '遥感与模型', '冰雪灾害', '祁连山水文', '青藏高原寒区水文'];
-const SEARCH_TERMS = ['river ice', 'ice jam', 'snow', 'glacier', 'sea ice', 'permafrost', 'freeze thaw', 'cryosphere hydrology', 'Qilian Mountains hydrology', 'Tibetan Plateau hydrology'];
+const SEARCH_TERMS = ['river ice', 'ice jam', 'snowpack', 'snow cover', 'snowmelt', 'snow water equivalent', 'snowfall', 'glacier meltwater', 'ice sheet', 'sea ice', 'permafrost freeze-thaw', 'cryosphere hydrology', 'Qilian Mountains hydrology', 'Tibetan Plateau hydrology'];
 const state = {
   journals: [], papers: [], activeTopic: '全部', activeView: 'feed', settings: { time: '08:30' }, saved: [], cursors: {}
 };
@@ -59,6 +59,34 @@ function articleFromOpenAlex(work) {
     cited: work.cited_by_count || 0
   };
 }
+const RESEARCH_SIGNALS = [
+  'river ice', 'river-ice', 'riverine ice', 'ice cover', 'ice jam', 'ice-jam', 'ice-jamming',
+  'snowpack', 'snow cover', 'snowfall', 'snowmelt', 'snow water equivalent', 'seasonal snow',
+  'snow dynamics', 'snow depth', 'snow distribution', 'snow hydrology', 'snow avalanche',
+  'glacier', 'glacial', 'meltwater', 'ice sheet', 'ice shelf', 'sea ice', 'marine ice',
+  'antarctic ice', 'arctic ice', 'permafrost', 'freeze-thaw', 'freeze thaw', 'seasonal frost',
+  'cryosphere', 'glaciohydrology', 'qilian mountains', 'qilian mountain', 'qilian shan',
+  'tibetan plateau', 'qinghai-tibet', 'qinghai tibet', 'third pole'
+];
+const OFF_TOPIC_SIGNALS = [
+  'ice cream', 'ice hockey', 'ice skating', 'ice bath', 'ice cooling', 'ice maker',
+  'ice machine', 'ice slurry', 'ice-templated', 'ice-binding protein', 'protein crystallization',
+  'lithium-ion battery', 'battery electrode', 'cancer', 'surgery', 'food', 'beverage',
+  'cosmetic', 'concrete', 'asphalt', 'road icing', 'aircraft icing', 'glacier-inspired',
+  'glacier-like'
+];
+function isResearchRelevant(paper) {
+  const text = lower([
+    paper.title, paper.abstract, ...(paper.keywords || []),
+    ...(paper.topics || []), paper.primaryTopic
+  ].filter(Boolean).join(' '));
+  if (!RESEARCH_SIGNALS.some(signal => text.includes(signal))) return false;
+  const title = lower(paper.title);
+  if (OFF_TOPIC_SIGNALS.some(signal => text.includes(signal)) &&
+      !RESEARCH_SIGNALS.some(signal => title.includes(signal))) return false;
+  return true;
+}
+
 function dateOffset(days) { const d = new Date(); d.setDate(d.getDate() - days); return localDate(d); }
 
 async function fetchSearchPage(term, cursor) {
@@ -82,7 +110,7 @@ async function getNextBatch(reset = false) {
   batches.forEach(batch => { state.cursors[batch.term] = batch.nextCursor; });
   const existing = new Set(state.papers.map(paper => paper.id));
   batches.flatMap(batch => batch.results).map(articleFromOpenAlex).forEach(paper => {
-    if (sourceMatches(paper.journal) && !existing.has(paper.id)) { existing.add(paper.id); state.papers.push(paper); }
+    if (sourceMatches(paper.journal) && isResearchRelevant(paper) && !existing.has(paper.id)) { existing.add(paper.id); state.papers.push(paper); }
   });
   state.papers.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 }
@@ -96,7 +124,7 @@ async function loadPapers() {
     state.papers = [];
     await getNextBatch(true);
     $('#status').textContent = state.papers.length
-      ? `数据来源：OpenAlex · 已用 10 组冰雪与寒区主题词检索并按期刊过滤 · 当前已显示 ${state.papers.length} 篇，不设每日篇数上限`
+      ? `数据来源：OpenAlex · 已用精确冰雪与寒区主题词检索，并按标题、摘要、关键词和主题标签做相关性筛选 · 当前已显示 ${state.papers.length} 篇，不设每日篇数上限`
       : '本次检索没有在已关注期刊中找到匹配文章。可在“期刊来源”中扩大追踪范围，或稍后重试。';
   } catch (error) {
     state.papers = [];
