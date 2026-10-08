@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 
-const DEFAULT_SEARCH_TERMS = ['river ice', 'ice jam', 'snowpack', 'snow cover', 'snowmelt', 'snow water equivalent', 'snowfall', 'glacier meltwater', 'ice sheet', 'sea ice', 'permafrost freeze-thaw', 'cryosphere hydrology', 'Qilian Mountains hydrology', 'Tibetan Plateau hydrology'];
+const DEFAULT_SEARCH_TERMS = ['river ice', 'ice jam', 'snowpack', 'snow cover', 'snowmelt', 'snow water equivalent', 'snowfall', 'glacier', 'glacier meltwater', 'ice sheet', 'sea ice', 'permafrost', 'freeze thaw', 'permafrost freeze-thaw', 'cryosphere hydrology', 'Qilian Mountains hydrology', 'Tibetan Plateau hydrology'];
 const requestedProfileId = (process.env.DIGEST_PROFILE || '').trim();
 const profileId = requestedProfileId === 'default' ? '' : requestedProfileId;
 const profiles = JSON.parse(await fs.readFile(new URL('../config/member-digest-profiles.json', import.meta.url), 'utf8'));
