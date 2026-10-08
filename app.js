@@ -1,5 +1,5 @@
 const TOPICS = ['河冰', '冰塞', '降雪与积雪', '冰川与融水', '海冰', '冻土与冻融', '冰冻圈水文', '遥感与模型', '冰雪灾害', '祁连山水文', '青藏高原寒区水文'];
-const SEARCH_TERMS = ['river ice', 'ice jam', 'snowpack', 'snow cover', 'snowmelt', 'snow water equivalent', 'snowfall', 'glacier meltwater', 'ice sheet', 'sea ice', 'permafrost freeze-thaw', 'cryosphere hydrology', 'Qilian Mountains hydrology', 'Tibetan Plateau hydrology'];
+const SEARCH_TERMS = ['river ice', 'ice jam', 'snowpack', 'snow cover', 'snowmelt', 'snow water equivalent', 'snowfall', 'glacier', 'glacier meltwater', 'ice sheet', 'sea ice', 'permafrost', 'freeze thaw', 'permafrost freeze-thaw', 'cryosphere hydrology', 'Qilian Mountains hydrology', 'Tibetan Plateau hydrology'];
 const state = {
   journals: [], papers: [], activeTopic: '全部', activeView: 'feed', settings: { time: '08:30' }, saved: [], cursors: {}
 };
