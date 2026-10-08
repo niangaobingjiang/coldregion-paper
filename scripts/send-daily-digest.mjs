@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 
-const DEFAULT_SEARCH_TERMS = ['river ice', 'ice jam', 'snow', 'glacier', 'sea ice', 'permafrost', 'freeze thaw', 'cryosphere hydrology', 'Qilian Mountains hydrology', 'Tibetan Plateau hydrology'];
+const DEFAULT_SEARCH_TERMS = ['river ice', 'ice jam', 'snowpack', 'snow cover', 'snowmelt', 'snow water equivalent', 'snowfall', 'glacier meltwater', 'ice sheet', 'sea ice', 'permafrost freeze-thaw', 'cryosphere hydrology', 'Qilian Mountains hydrology', 'Tibetan Plateau hydrology'];
 const requestedProfileId = (process.env.DIGEST_PROFILE || '').trim();
 const profileId = requestedProfileId === 'default' ? '' : requestedProfileId;
 const profiles = JSON.parse(await fs.readFile(new URL('../config/member-digest-profiles.json', import.meta.url), 'utf8'));
@@ -17,6 +17,34 @@ const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, char => ({ 
 const lower = (value = '') => value.toLowerCase();
 const journalMatches = (name, journals) => journals.some(journal => lower(journal.name) === lower(name));
 const profileJournalMatches = (name) => profile.journals.some(journal => lower(journal) === lower(name));
+
+const RESEARCH_SIGNALS = [
+  'river ice', 'river-ice', 'riverine ice', 'ice cover', 'ice jam', 'ice-jam', 'ice-jamming',
+  'snowpack', 'snow cover', 'snowfall', 'snowmelt', 'snow water equivalent', 'seasonal snow',
+  'snow dynamics', 'snow depth', 'snow distribution', 'snow hydrology', 'snow avalanche',
+  'glacier', 'glacial', 'meltwater', 'ice sheet', 'ice shelf', 'sea ice', 'marine ice',
+  'antarctic ice', 'arctic ice', 'permafrost', 'freeze-thaw', 'freeze thaw', 'seasonal frost',
+  'cryosphere', 'glaciohydrology', 'qilian mountains', 'qilian mountain', 'qilian shan',
+  'tibetan plateau', 'qinghai-tibet', 'qinghai tibet', 'third pole'
+];
+const OFF_TOPIC_SIGNALS = [
+  'ice cream', 'ice hockey', 'ice skating', 'ice bath', 'ice cooling', 'ice maker',
+  'ice machine', 'ice slurry', 'ice-templated', 'ice-binding protein', 'protein crystallization',
+  'lithium-ion battery', 'battery electrode', 'cancer', 'surgery', 'food', 'beverage',
+  'cosmetic', 'concrete', 'asphalt', 'road icing', 'aircraft icing', 'glacier-inspired',
+  'glacier-like'
+];
+function isResearchRelevant(work) {
+  const text = lower([
+    work.title, work.abstract, ...(work.keywords || []),
+    ...(work.topics || []), work.primaryTopic
+  ].filter(Boolean).join(' '));
+  if (!RESEARCH_SIGNALS.some(signal => text.includes(signal))) return false;
+  const title = lower(work.title);
+  if (OFF_TOPIC_SIGNALS.some(signal => text.includes(signal)) &&
+      !RESEARCH_SIGNALS.some(signal => title.includes(signal))) return false;
+  return true;
+}
 
 function topicsFor(work) {
   const text = lower([
@@ -42,6 +70,7 @@ function topicsFor(work) {
 }
 
 function matchesProfile(work) {
+  if (!isResearchRelevant(work)) return false;
   if (!profile) return true;
   const text = lower([work.title, work.abstract, ...(work.keywords || []), ...(work.topics || []), work.primaryTopic].filter(Boolean).join(' '));
   return profile.matchTerms.some(term => text.includes(lower(term)));
