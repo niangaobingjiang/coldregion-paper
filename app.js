@@ -76,11 +76,15 @@ const OFF_TOPIC_SIGNALS = [
   'glacier-like'
 ];
 function isResearchRelevant(paper) {
-  const text = lower([
-    paper.title, paper.abstract, ...(paper.keywords || []),
-    ...(paper.topics || []), paper.primaryTopic
+  const contentText = lower([
+    paper.title, paper.abstract, ...(paper.keywords || [])
   ].filter(Boolean).join(' '));
-  if (!RESEARCH_SIGNALS.some(signal => text.includes(signal))) return false;
+  const topicText = lower([...(paper.topics || []), paper.primaryTopic].filter(Boolean).join(' '));
+  const contentHit = RESEARCH_SIGNALS.some(signal => contentText.includes(signal));
+  const topicHit = RESEARCH_SIGNALS.some(signal => topicText.includes(signal));
+  const contextHit = /cryosphere|glacier|snow|ice|permafrost|freeze|qilian|tibetan/.test(contentText);
+  if (!contentHit && !(topicHit && contextHit)) return false;
+  const text = contentText + ' ' + topicText;
   const title = lower(paper.title);
   if (OFF_TOPIC_SIGNALS.some(signal => text.includes(signal)) &&
       !RESEARCH_SIGNALS.some(signal => title.includes(signal))) return false;
