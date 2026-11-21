@@ -108,15 +108,18 @@ async function fetchAll(term) {
     let response;
     for (let attempt = 0; attempt < 5; attempt += 1) {
       response = await fetch(url);
-      if (response.status !== 429) break;
+      const transient = response.status === 429 || response.status >= 500;
+      if (!transient) break;
       const retryAfter = Number(response.headers.get('retry-after'));
-      const delay = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 2000 * (attempt + 1);
-      console.warn(`OpenAlex rate limit for ${term}; retrying in ${delay}ms.`);
+      const delay = Number.isFinite(retryAfter) && retryAfter > 0
+        ? Math.min(retryAfter * 1000, 15000)
+        : Math.min(2000 * (attempt + 1), 10000);
+      console.warn(`OpenAlex ${response.status} for ${term}; retrying in ${delay}ms.`);
       await sleep(delay);
     }
     if (!response.ok) {
-      if (response.status === 429) {
-        console.warn(`OpenAlex rate limit persisted for ${term}; skipping this term so the digest can still be sent.`);
+      if (response.status === 429 || response.status >= 500) {
+        console.warn(`OpenAlex ${response.status} persisted for ${term}; skipping this term so the digest can still be sent.`);
         break;
       }
       throw new Error(`OpenAlex ${response.status} for ${term}`);
