@@ -158,6 +158,11 @@ function paperMatches(paper) {
   const topicOk = state.activeTopic === '全部' || getTopics(paper).includes(state.activeTopic);
   return sourceMatches(paper.journal) && topicOk && (!query || lower(`${paper.title} ${paper.journal} ${paper.authors} ${paper.abstract}`).includes(query));
 }
+function paperAbstractForDisplay(paper) {
+  const abstract = String(paper.abstract || '').replace(/\s+/g, ' ').trim();
+  if (abstract) return { label: '摘要', text: abstract };
+  return { label: '摘要', text: '该条目暂无可公开获取的摘要。' };
+}
 function renderPapers(target, list) {
   target.innerHTML = '';
   if (!list.length) {
@@ -171,8 +176,10 @@ function renderPapers(target, list) {
     node.querySelector('.score').textContent = `引用 ${paper.cited}`;
     node.querySelector('.paper-title').textContent = paper.title;
     node.querySelector('.authors').textContent = paper.authors;
-    const abstract = paper.abstract || '该条目暂未提供可公开获取的摘要。';
-    node.querySelector('.abstract-text').textContent = abstract.length > 420 ? `${abstract.slice(0, 420)}…` : abstract;
+    const insight = paperAbstractForDisplay(paper);
+    const abstract = insight.text;
+    node.querySelector('.abstract-label').textContent = insight.label;
+    node.querySelector('.abstract-text').textContent = abstract.length > 420 ? `${abstract.slice(0, 420).replace(/\s+\S*$/, '')}…` : abstract;
     const tags = node.querySelector('.tags');
     (getTopics(paper).length ? getTopics(paper) : ['寒区研究']).forEach(tag => { const span = document.createElement('span'); span.className = 'tag'; span.textContent = tag; tags.append(span); });
     (paper.keywords || []).slice(0, 8).forEach(keyword => { const span = document.createElement('span'); span.className = 'tag keyword-tag'; span.textContent = keyword; tags.append(span); });
@@ -258,3 +265,4 @@ async function init() {
   render(); loadPapers(); setInterval(checkDailyDigest, 30 * 1000);
 }
 init();
+

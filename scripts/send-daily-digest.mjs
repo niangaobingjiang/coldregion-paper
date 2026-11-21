@@ -49,7 +49,11 @@ function isResearchRelevant(work) {
       !RESEARCH_SIGNALS.some(signal => title.includes(signal))) return false;
   return true;
 }
-
+const cleanText = (value = '') => String(value).replace(/\s+/g, ' ').trim();
+const truncateText = (value = '', limit = 900) => {
+  const text = cleanText(value);
+  return text.length > limit ? `${text.slice(0, limit).replace(/\s+\S*$/, '')}…` : text;
+};
 function topicsFor(work) {
   const text = lower([
     work.title,
@@ -79,7 +83,11 @@ function matchesProfile(work) {
   const text = lower([work.title, work.abstract, ...(work.keywords || []), ...(work.topics || []), work.primaryTopic].filter(Boolean).join(' '));
   return profile.matchTerms.some(term => text.includes(lower(term)));
 }
-
+function abstractForDigest(paper) {
+  const abstract = truncateText(paper.abstract);
+  if (abstract) return { label: '摘要', text: abstract };
+  return { label: '摘要', text: '该条目暂无可公开获取的摘要。' };
+}
 async function fetchAll(term) {
   let cursor = '*';
   const collected = [];
@@ -131,7 +139,10 @@ function invertAbstract(index) {
 }
 
 function emailHtml(papers) {
-  const rows = papers.map(paper => `<article style="padding:18px 0;border-bottom:1px solid #dbe5e5"><p style="margin:0 0 7px;color:#207078;font-size:12px">${escapeHtml(paper.journal)} · ${escapeHtml(paper.date)} · 引用 ${paper.cited}</p><h2 style="margin:0 0 8px;font-size:18px;line-height:1.45"><a href="${escapeHtml(paper.url)}" style="color:#112b36;text-decoration:none">${escapeHtml(paper.title)}</a></h2><p style="margin:0;color:#61757a;font-size:13px">${escapeHtml(paper.authors)}</p><p style="margin:9px 0 0;color:#38757a;font-size:12px">${topicsFor(paper).join(' · ') || '冰雪与寒区研究'}</p></article>`).join('');
+  const rows = papers.map(paper => {
+    const insight = abstractForDigest(paper);
+    return `<article style="padding:18px 0;border-bottom:1px solid #dbe5e5"><p style="margin:0 0 7px;color:#207078;font-size:12px">${escapeHtml(paper.journal)} · ${escapeHtml(paper.date)} · 引用 ${paper.cited}</p><h2 style="margin:0 0 8px;font-size:18px;line-height:1.45"><a href="${escapeHtml(paper.url)}" style="color:#112b36;text-decoration:none">${escapeHtml(paper.title)}</a></h2><p style="margin:0;color:#61757a;font-size:13px">${escapeHtml(paper.authors)}</p><p style="margin:11px 0 0;color:#2d656b;font-size:12px;font-weight:700">${insight.label}</p><p style="margin:4px 0 0;color:#526a70;font-size:13px;line-height:1.7">${escapeHtml(insight.text)}</p><p style="margin:9px 0 0;color:#38757a;font-size:12px">${topicsFor(paper).join(' · ') || '冰雪与寒区研究'}</p></article>`;
+  }).join('');
   const profileIntro = profile
     ? `<section style="margin:0 0 22px;padding:14px 16px;background:#edf7f6;border-left:4px solid #207078"><strong>本期偏好：${escapeHtml(profile.name)}</strong><br><span style="color:#61757a;font-size:13px">关注领域：${escapeHtml(profile.fields.join('、'))}；关注期刊：${profile.journals.length} 种${profile.supplement ? `；补充检索：${escapeHtml(profile.supplement)}` : ''}</span></section>`
     : '';
@@ -152,3 +163,4 @@ const papers = [...unique.values()].sort((a, b) => b.date.localeCompare(a.date))
 const outputPath = process.env.DIGEST_OUTPUT_PATH || 'daily-digest.html';
 await fs.writeFile(outputPath, emailHtml(papers), 'utf8');
 console.log(JSON.stringify({ fromDate: START_DATE, toDate: TODAY, digestDays: DIGEST_DAYS, profile: profileId || 'default', papers: papers.length, outputPath }));
+
