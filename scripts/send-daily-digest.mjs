@@ -11,6 +11,9 @@ const SEARCH_TERMS = requestedTerms.length ? requestedTerms : (profile?.searchTe
 const requestedMaxPages = Number.parseInt(process.env.DIGEST_MAX_PAGES || '0', 10);
 const MAX_PAGES = Number.isInteger(requestedMaxPages) && requestedMaxPages > 0 ? requestedMaxPages : 0;
 const OPENALEX_MAILTO = (process.env.OPENALEX_MAILTO || '').trim();
+const CROSSREF_MAILTO = (process.env.CROSSREF_MAILTO || OPENALEX_MAILTO).trim();
+const OPENALEX_MIN_INTERVAL_MS = Math.max(0, Number.parseInt(process.env.OPENALEX_MIN_INTERVAL_MS || '750', 10) || 0);
+let lastOpenAlexRequestAt = 0;
 const TODAY = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).format(new Date());
 const requestedDays = Number.parseInt(process.env.DIGEST_DAYS || '1', 10);
 const DIGEST_DAYS = Number.isInteger(requestedDays) && requestedDays >= 1 && requestedDays <= 14 ? requestedDays : 1;
@@ -107,6 +110,9 @@ async function fetchAll(term) {
     if (OPENALEX_MAILTO) url.searchParams.set('mailto', OPENALEX_MAILTO);
     let response;
     for (let attempt = 0; attempt < 5; attempt += 1) {
+      const waitFor = OPENALEX_MIN_INTERVAL_MS - (Date.now() - lastOpenAlexRequestAt);
+      if (waitFor > 0) await sleep(waitFor);
+      lastOpenAlexRequestAt = Date.now();
       response = await fetch(url);
       const transient = response.status === 429 || response.status >= 500;
       if (!transient) break;
@@ -120,7 +126,7 @@ async function fetchAll(term) {
     if (!response.ok) {
       if (response.status === 429 || response.status >= 500) {
         console.warn(`OpenAlex ${response.status} persisted for ${term}; skipping this term so the digest can still be sent.`);
-        break;
+        return fetchCrossref(term);
       }
       throw new Error(`OpenAlex ${response.status} for ${term}`);
     }
@@ -133,6 +139,46 @@ async function fetchAll(term) {
   return collected;
 }
 
+function stripHtml(value = '') {
+  return cleanText(String(value).replace(/<[^>]*>/g, ' '));
+}
+
+function crossrefWork(item) {
+  const doi = item.DOI || '';
+  const dateParts = item.published?.['date-parts']?.[0] || item['published-print']?.['date-parts']?.[0] || item['published-online']?.['date-parts']?.[0] || [];
+  return {
+    id: doi ? `https://doi.org/${doi}` : item.URL || `crossref:${item.title?.[0] || 'untitled'}`,
+    title: item.title?.[0] || '未提供标题',
+    doi,
+    publication_date: dateParts.length ? dateParts.map((part, index) => index === 1 ? String(part).padStart(2, '0') : index === 2 ? String(part).padStart(2, '0') : String(part)).join('-') : TODAY,
+    authorships: (item.author || []).map(author => ({ author: { display_name: [author.given, author.family].filter(Boolean).join(' ') } })),
+    primary_location: { source: { display_name: item['container-title']?.[0] || '' }, landing_page_url: item.URL || (doi ? `https://doi.org/${doi}` : '') },
+    cited_by_count: item['is-referenced-by-count'] || 0,
+    abstract: stripHtml(item.abstract || ''),
+    keywords: item.subject || [],
+    topics: [],
+    primary_topic: null
+  };
+}
+
+async function fetchCrossref(term) {
+  const url = new URL('https://api.crossref.org/works');
+  url.searchParams.set('query', term);
+  url.searchParams.set('filter', `from-pub-date:${START_DATE},until-pub-date:${TODAY},type:journal-article`);
+  url.searchParams.set('sort', 'published');
+  url.searchParams.set('order', 'desc');
+  url.searchParams.set('rows', '100');
+  if (CROSSREF_MAILTO) url.searchParams.set('mailto', CROSSREF_MAILTO);
+  const response = await fetch(url, { headers: { 'User-Agent': `coldregion-paper/1.0${CROSSREF_MAILTO ? ` (mailto:${CROSSREF_MAILTO})` : ''}` } });
+  if (!response.ok) {
+    console.warn(`Crossref ${response.status} for ${term}; skipping fallback.`);
+    return [];
+  }
+  const data = await response.json();
+  console.warn(`Crossref fallback used for ${term}; received ${data.message?.items?.length || 0} records.`);
+  return (data.message?.items || []).map(crossrefWork);
+}
+
 function normalize(work) {
   const journal = work.primary_location?.source?.display_name || '';
   return {
@@ -141,7 +187,7 @@ function normalize(work) {
     journal,
     date: work.publication_date || TODAY,
     authors: (work.authorships || []).slice(0, 4).map(item => item.author?.display_name).filter(Boolean).join(', ') || '作者信息待补充',
-    abstract: invertAbstract(work.abstract_inverted_index),
+    abstract: work.abstract || invertAbstract(work.abstract_inverted_index),
     keywords: (work.keywords || []).map(keyword => keyword.display_name).filter(Boolean),
     topics: (work.topics || []).flatMap(topic => [topic.display_name, topic.subfield?.display_name, topic.field?.display_name]).filter(Boolean),
     primaryTopic: work.primary_topic?.display_name || '',
