@@ -14,6 +14,7 @@ const OPENALEX_MAILTO = (process.env.OPENALEX_MAILTO || '').trim();
 const CROSSREF_MAILTO = (process.env.CROSSREF_MAILTO || OPENALEX_MAILTO).trim();
 const OPENALEX_MIN_INTERVAL_MS = Math.max(0, Number.parseInt(process.env.OPENALEX_MIN_INTERVAL_MS || '750', 10) || 0);
 let lastOpenAlexRequestAt = 0;
+let openAlexUnavailableUntil = 0;
 const TODAY = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).format(new Date());
 const requestedDays = Number.parseInt(process.env.DIGEST_DAYS || '1', 10);
 const DIGEST_DAYS = Number.isInteger(requestedDays) && requestedDays >= 1 && requestedDays <= 14 ? requestedDays : 1;
@@ -96,6 +97,7 @@ function abstractForDigest(paper) {
   return { label: '摘要', text: '该条目暂无可公开获取的摘要。' };
 }
 async function fetchAll(term) {
+  if (Date.now() < openAlexUnavailableUntil) return fetchCrossref(term);
   let cursor = '*';
   const collected = [];
   let pageCount = 0;
@@ -116,6 +118,11 @@ async function fetchAll(term) {
       response = await fetch(url);
       const transient = response.status === 429 || response.status >= 500;
       if (!transient) break;
+      if (response.status === 429) {
+        openAlexUnavailableUntil = Date.now() + 10 * 60 * 1000;
+        console.warn(`OpenAlex rate limit for ${term}; using Crossref fallback for this and subsequent terms for 10 minutes.`);
+        break;
+      }
       const retryAfter = Number(response.headers.get('retry-after'));
       const delay = Number.isFinite(retryAfter) && retryAfter > 0
         ? Math.min(retryAfter * 1000, 15000)
