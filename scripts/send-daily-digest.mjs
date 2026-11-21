@@ -6,7 +6,11 @@ const profileId = requestedProfileId === 'default' ? '' : requestedProfileId;
 const profiles = JSON.parse(await fs.readFile(new URL('../config/member-digest-profiles.json', import.meta.url), 'utf8'));
 const profile = profileId ? profiles[profileId] : null;
 if (profileId && !profile) throw new Error(`Unknown DIGEST_PROFILE: ${profileId}`);
-const SEARCH_TERMS = profile?.searchTerms || DEFAULT_SEARCH_TERMS;
+const requestedTerms = (process.env.DIGEST_SEARCH_TERMS || '').split(',').map(term => term.trim()).filter(Boolean);
+const SEARCH_TERMS = requestedTerms.length ? requestedTerms : (profile?.searchTerms || DEFAULT_SEARCH_TERMS);
+const requestedMaxPages = Number.parseInt(process.env.DIGEST_MAX_PAGES || '0', 10);
+const MAX_PAGES = Number.isInteger(requestedMaxPages) && requestedMaxPages > 0 ? requestedMaxPages : 0;
+const OPENALEX_MAILTO = (process.env.OPENALEX_MAILTO || '').trim();
 const TODAY = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).format(new Date());
 const requestedDays = Number.parseInt(process.env.DIGEST_DAYS || '1', 10);
 const DIGEST_DAYS = Number.isInteger(requestedDays) && requestedDays >= 1 && requestedDays <= 14 ? requestedDays : 1;
@@ -91,6 +95,7 @@ function abstractForDigest(paper) {
 async function fetchAll(term) {
   let cursor = '*';
   const collected = [];
+  let pageCount = 0;
   while (cursor) {
     const url = new URL('https://api.openalex.org/works');
     url.searchParams.set('search', term);
@@ -99,6 +104,7 @@ async function fetchAll(term) {
     url.searchParams.set('per-page', '100');
     url.searchParams.set('cursor', cursor);
     url.searchParams.set('select', 'id,title,doi,publication_date,authorships,primary_location,cited_by_count,abstract_inverted_index,keywords,topics,primary_topic');
+    if (OPENALEX_MAILTO) url.searchParams.set('mailto', OPENALEX_MAILTO);
     let response;
     for (let attempt = 0; attempt < 5; attempt += 1) {
       response = await fetch(url);
@@ -108,10 +114,18 @@ async function fetchAll(term) {
       console.warn(`OpenAlex rate limit for ${term}; retrying in ${delay}ms.`);
       await sleep(delay);
     }
-    if (!response.ok) throw new Error(`OpenAlex ${response.status} for ${term}`);
+    if (!response.ok) {
+      if (response.status === 429) {
+        console.warn(`OpenAlex rate limit persisted for ${term}; skipping this term so the digest can still be sent.`);
+        break;
+      }
+      throw new Error(`OpenAlex ${response.status} for ${term}`);
+    }
     const data = await response.json();
     collected.push(...(data.results || []));
     cursor = data.meta?.next_cursor || null;
+    pageCount += 1;
+    if (MAX_PAGES && pageCount >= MAX_PAGES) break;
   }
   return collected;
 }

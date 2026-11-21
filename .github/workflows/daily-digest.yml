@@ -27,6 +27,16 @@ on:
         required: false
         default: false
         type: boolean
+      search_terms:
+        description: Optional comma-separated search terms for a small test run
+        required: false
+        default: ''
+        type: string
+      max_pages:
+        description: Optional maximum OpenAlex pages per term; 0 means unlimited
+        required: false
+        default: '0'
+        type: string
       send_members:
         description: Send all three personalized digests to members
         required: false
@@ -81,6 +91,7 @@ jobs:
           DIGEST_OUTPUT_PATH: daily-digest.html
           DIGEST_DAYS: '3'
           DIGEST_PROFILE: ${{ matrix.profile }}
+          OPENALEX_MAILTO: ${{ secrets.SMTP_FROM_EMAIL }}
         run: node scripts/send-daily-digest.mjs
       - name: Send member digest through NetEase SMTP
         env:
@@ -107,6 +118,9 @@ jobs:
           DIGEST_OUTPUT_PATH: daily-digest.html
           DIGEST_DAYS: ${{ inputs.digest_days || '3' }}
           DIGEST_PROFILE: ${{ inputs.profile || '' }}
+          DIGEST_SEARCH_TERMS: ${{ inputs.search_terms || '' }}
+          DIGEST_MAX_PAGES: ${{ inputs.max_pages || '0' }}
+          OPENALEX_MAILTO: ${{ secrets.SMTP_FROM_EMAIL }}
         run: node scripts/send-daily-digest.mjs
       - name: Send through NetEase SMTP
         env:
@@ -117,6 +131,8 @@ jobs:
           NETEASE_SMTP_AUTH_CODE: ${{ secrets.NETEASE_SMTP_AUTH_CODE }}
           DIGEST_DAYS: ${{ inputs.digest_days || '3' }}
           DIGEST_PROFILE: ${{ inputs.profile || '' }}
+          DIGEST_SEARCH_TERMS: ${{ inputs.search_terms || '' }}
+          DIGEST_MAX_PAGES: ${{ inputs.max_pages || '0' }}
           DIGEST_PREVIEW: ${{ inputs.preview || 'false' }}
         run: python scripts/send-netease-smtp.py daily-digest.html
 
@@ -133,6 +149,7 @@ jobs:
           DIGEST_OUTPUT_PATH: daily-digest.html
           DIGEST_DAYS: '3'
           DIGEST_PROFILE: default
+          OPENALEX_MAILTO: ${{ secrets.SMTP_FROM_EMAIL }}
         run: node scripts/send-daily-digest.mjs
       - name: Send shared digest through NetEase SMTP
         env:
@@ -159,6 +176,7 @@ jobs:
           DIGEST_OUTPUT_PATH: daily-digest.html
           DIGEST_DAYS: '3'
           DIGEST_PROFILE: feng-yuanbao
+          OPENALEX_MAILTO: ${{ secrets.SMTP_FROM_EMAIL }}
         run: node scripts/send-daily-digest.mjs
       - name: Send Feng Yuanbao digest through NetEase SMTP
         env:
@@ -171,3 +189,4 @@ jobs:
           DIGEST_PROFILE: feng-yuanbao
           DIGEST_PREVIEW: 'false'
         run: python scripts/send-netease-smtp.py daily-digest.html
+
