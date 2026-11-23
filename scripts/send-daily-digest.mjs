@@ -13,8 +13,11 @@ const MAX_PAGES = Number.isInteger(requestedMaxPages) && requestedMaxPages > 0 ?
 const OPENALEX_MAILTO = (process.env.OPENALEX_MAILTO || '').trim();
 const CROSSREF_MAILTO = (process.env.CROSSREF_MAILTO || OPENALEX_MAILTO).trim();
 const OPENALEX_MIN_INTERVAL_MS = Math.max(0, Number.parseInt(process.env.OPENALEX_MIN_INTERVAL_MS || '750', 10) || 0);
+const CROSSREF_MIN_INTERVAL_MS = Math.max(0, Number.parseInt(process.env.CROSSREF_MIN_INTERVAL_MS || '750', 10) || 0);
 let lastOpenAlexRequestAt = 0;
 let openAlexUnavailableUntil = 0;
+let lastCrossrefRequestAt = 0;
+let crossrefUnavailableUntil = 0;
 const TODAY = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).format(new Date());
 const requestedDays = Number.parseInt(process.env.DIGEST_DAYS || '1', 10);
 const DIGEST_DAYS = Number.isInteger(requestedDays) && requestedDays >= 1 && requestedDays <= 14 ? requestedDays : 1;
@@ -169,6 +172,10 @@ function crossrefWork(item) {
 }
 
 async function fetchCrossref(term) {
+  if (Date.now() < crossrefUnavailableUntil) return [];
+  const waitFor = CROSSREF_MIN_INTERVAL_MS - (Date.now() - lastCrossrefRequestAt);
+  if (waitFor > 0) await sleep(waitFor);
+  lastCrossrefRequestAt = Date.now();
   const url = new URL('https://api.crossref.org/works');
   url.searchParams.set('query', term);
   url.searchParams.set('filter', `from-pub-date:${START_DATE},until-pub-date:${TODAY},type:journal-article`);
@@ -178,7 +185,12 @@ async function fetchCrossref(term) {
   if (CROSSREF_MAILTO) url.searchParams.set('mailto', CROSSREF_MAILTO);
   const response = await fetch(url, { headers: { 'User-Agent': `coldregion-paper/1.0${CROSSREF_MAILTO ? ` (mailto:${CROSSREF_MAILTO})` : ''}` } });
   if (!response.ok) {
-    console.warn(`Crossref ${response.status} for ${term}; skipping fallback.`);
+    if (response.status === 429 || response.status >= 500) {
+      crossrefUnavailableUntil = Date.now() + 10 * 60 * 1000;
+      console.warn(`Crossref ${response.status} for ${term}; pausing fallback requests for 10 minutes.`);
+    } else {
+      console.warn(`Crossref ${response.status} for ${term}; skipping fallback.`);
+    }
     return [];
   }
   const data = await response.json();
@@ -195,7 +207,7 @@ function normalize(work) {
     date: work.publication_date || TODAY,
     authors: (work.authorships || []).slice(0, 4).map(item => item.author?.display_name).filter(Boolean).join(', ') || '作者信息待补充',
     abstract: work.abstract || invertAbstract(work.abstract_inverted_index),
-    keywords: (work.keywords || []).map(keyword => keyword.display_name).filter(Boolean),
+    keywords: (work.keywords || []).map(keyword => typeof keyword === 'string' ? keyword : keyword.display_name).filter(Boolean),
     topics: (work.topics || []).flatMap(topic => [topic.display_name, topic.subfield?.display_name, topic.field?.display_name]).filter(Boolean),
     primaryTopic: work.primary_topic?.display_name || '',
     url: work.doi ? `https://doi.org/${work.doi.replace('https://doi.org/', '')}` : work.primary_location?.landing_page_url || work.id,
@@ -225,9 +237,16 @@ const journals = JSON.parse(await fs.readFile(new URL('../journals.json', import
 const allWorks = [];
 for (const term of SEARCH_TERMS) allWorks.push(...await fetchAll(term));
 const unique = new Map();
-for (const work of allWorks.map(normalize)) {
-  const journalIsWanted = profile ? profileJournalMatches(work.journal) : journalMatches(work.journal, journals);
-  if (journalIsWanted && matchesProfile(work)) unique.set(work.id, work);
+function addMatchingWorks(works) {
+  for (const work of works.map(normalize)) {
+    const journalIsWanted = profile ? profileJournalMatches(work.journal) : journalMatches(work.journal, journals);
+    if (journalIsWanted && matchesProfile(work)) unique.set(work.id, work);
+  }
+}
+addMatchingWorks(allWorks);
+if (!unique.size) {
+  console.warn('No matching works from the primary source; running Crossref fallback search.');
+  for (const term of SEARCH_TERMS) addMatchingWorks(await fetchCrossref(term));
 }
 const papers = [...unique.values()].sort((a, b) => b.date.localeCompare(a.date));
 const outputPath = process.env.DIGEST_OUTPUT_PATH || 'daily-digest.html';
